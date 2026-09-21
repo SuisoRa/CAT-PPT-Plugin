@@ -37,5 +37,7 @@ if (& $git remote 2>$null | Select-String -Pattern "^origin$" -Quiet) {
     exit 0
 }
 
-& $gh repo create $RepoName --$Visibility --source=. --remote=origin --push --description "CAT PPT Plugin - PowerPoint VSTO add-in"
+& $gh repo create $RepoName --$Visibility --description "CAT PPT Plugin - PowerPoint VSTO add-in"
+& $git remote add origin "https://github.com/$login/$RepoName.git"
+& $git push -u origin main
 Write-Host "Done. Repository: https://github.com/$login/$RepoName"

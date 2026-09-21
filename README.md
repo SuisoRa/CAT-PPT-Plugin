@@ -1,6 +1,8 @@
-# CAT — PowerPoint add-in
+# CAT PPT Plugin — PowerPoint add-in
 
 Windows VSTO add-in for classic desktop PowerPoint (365 / 2021 / 2019 / 2016). The **CAT** ribbon tab adds tools for alignment, text boxes, tables, icons, and a floating **Auto format** toolbar. Most actions also have keyboard shortcuts.
+
+**GitHub:** [github.com/SuisoRa/CAT-PPT-Plugin](https://github.com/SuisoRa/CAT-PPT-Plugin)
 
 ## Requirements
 
