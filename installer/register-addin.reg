@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; Per-user VSTO registration. Edit Manifest to the real CAT.vsto path
+; (forward slashes, file:/// prefix, |vstolocal suffix). Then restart PowerPoint.
+
+[HKEY_CURRENT_USER\Software\Microsoft\Office\PowerPoint\Addins\CAT]
+"Description"="CAT PowerPoint shortcuts and Auto format"
+"FriendlyName"="CAT"
+"LoadBehavior"=dword:00000003
+"Manifest"="file:///C:/Users/adith/Desktop/CAT/src/CAT/bin/Release/CAT.vsto|vstolocal"
+
+; After editing, double-click this file OR run: installer\install-addin.ps1

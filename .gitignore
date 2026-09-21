@@ -1,0 +1,14 @@
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pfx
+*.snk
+*.vsto
+*.dll.manifest
+*.pdb
+Thumbs.db
+Desktop.ini

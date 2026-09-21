@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnLoad">
+  <ribbon>
+    <tabs>
+      <tab id="catTab" label="CAT" insertAfterMso="TabHome">
+
+        <!-- ≤2-item groups first (left) -->
+        <group id="catAfGroup" label="Auto format">
+          <button id="catAutoFormat" label="Auto format" size="large"
+                  onAction="OnAction" getImage="GetImage"
+                  screentip="Open the Auto format toolbar" />
+        </group>
+
+        <group id="catTableCreatorGroup" label="Table Creator">
+          <button id="catTableCreator" label="Table Creator" size="large"
+                  onAction="OnAction" getImage="GetImage"
+                  screentip="Create text-box tables from size or clipboard" />
+        </group>
+
+        <group id="catLibraryGroup" label="Icons">
+          <button id="catIconLibrary" label="Icon library" size="large"
+                  onAction="OnAction" getImage="GetImage"
+                  screentip="Browse and insert SVG icons" />
+        </group>
+
+        <group id="catAlignOrderGroup" label="Align order">
+          <box id="catAlignOrderBox" boxStyle="vertical">
+            <checkBox id="catAlignByFirst" label="Align by first"
+                      getPressed="GetAlignByFirst" onAction="OnAlignByFirst"
+                      screentip="When checked, align to the first-selected shape"
+                      supertip="Off: current rules (leftmost / topmost / slide for one shape). On: every align uses the first shape you selected as the anchor." />
+            <button id="catMakeVertical" label="Make vertical" size="normal" getImage="GetImage" onAction="OnAction"
+                    screentip="Line: height 0 pt, anchored at top of shape bounds" />
+            <button id="catMakeHorizontal" label="Make horizontal" size="normal" getImage="GetImage" onAction="OnAction"
+                    screentip="Line: width 0 pt, anchored at left of shape bounds" />
+          </box>
+        </group>
+
+        <group id="catGrpSelectSimilar" label="Select similar">
+          <splitButton id="catSelectSimilarSplit" size="large">
+            <button id="catSelectSimilar" label="Select similar" getImage="GetImage" onAction="OnAction"
+                    screentip="Match fill, outline and type on this slide" />
+            <menu id="catSelectSimilarMenu">
+              <button id="catSelectSimilarOptions" label="Select with options…" getImage="GetImage" onAction="OnAction" />
+            </menu>
+          </splitButton>
+        </group>
+
+        <group id="catGrpCopyExcel" label="Copy for Excel">
+          <button id="catCopyExcel" label="Copy for Excel" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Copy selection text as tab-separated grid for Excel" />
+        </group>
+
+        <group id="catGroupingGroup" label="Grouping">
+          <button id="catAlignRows" label="Align rows and group" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Ctrl+Alt+Shift+R — table rows, topmost anchor" />
+          <button id="catAlignCols" label="Align columns and group" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Ctrl+Alt+Shift+C — table columns, leftmost anchor" />
+        </group>
+
+        <group id="catDistributingGroup" label="Distributing">
+          <button id="catDistH" label="Distribute horizontally" size="large" getImage="GetImage" onAction="OnAction" screentip="Alt+Shift+H" />
+          <button id="catDistV" label="Distribute vertically" size="large" getImage="GetImage" onAction="OnAction" screentip="Alt+Shift+V" />
+        </group>
+
+        <group id="catPositionGroup" label="Position">
+          <button id="catCopyPos" label="Copy position" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+1" />
+          <button id="catPastePos" label="Paste position" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+2" />
+        </group>
+
+        <!-- Larger groups -->
+        <group id="catSizingGroup" label="Sizing">
+          <button id="catSameH" label="Same height" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Shift+E" />
+          <button id="catSameW" label="Same width" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Alt+E" />
+          <button id="catSameSize" label="Same size" size="large" getImage="GetImage" onAction="OnAction" screentip="Alt+Z" />
+        </group>
+
+        <group id="catTextBoxPropsGroup" label="Text box properties">
+          <button id="catResize" label="Resize shape to fit text" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+8" />
+          <button id="catNoResize" label="Do not autofit" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Shift+8" />
+          <button id="catSplitJoin" label="Split / join text boxes" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Alt+J" />
+          <button id="catWrap" label="Word wrap on" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+7" />
+          <button id="catNoWrap" label="Word wrap off" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Shift+7" />
+          <button id="catLineSpacing" label="List line spacing" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Shift+L" />
+          <button id="catFixTextBox" label="Fix text box" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Plain text box styling" />
+        </group>
+
+        <!-- End of tab: Reset, Shape support, then Help -->
+        <group id="catResetGroup" label="Reset fixed">
+          <button id="catReset" label="Reset fixed elements" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Alt+R" />
+        </group>
+
+        <group id="catShapeSupportGroup" label="Shape support">
+          <button id="catSwapPosition" label="Swap position" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Swap top-left position of the first two selected shapes" />
+          <button id="catSameCornerRadius" label="Same corner radius" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Apply the first shape corner radius to the rest" />
+        </group>
+
+        <group id="catHelpGroup" label="Help">
+          <button id="catHelp" label="Shortcuts" size="large"
+                  onAction="OnAction" getImage="GetImage"
+                  screentip="Keyboard shortcuts" supertip="Opens a list of all CAT shortcut keys." />
+        </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
