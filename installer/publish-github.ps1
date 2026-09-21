@@ -1,8 +1,8 @@
-# Creates github.com/<your-account>/CAT and pushes the current project.
+# Creates github.com/<your-account>/CAT-PPT-Plugin and pushes the current project.
 # Prerequisites: Git + GitHub CLI installed; run `gh auth login` once.
 
 param(
-    [string]$RepoName = "CAT",
+    [string]$RepoName = "CAT-PPT-Plugin",
     [ValidateSet("private", "public")]
     [string]$Visibility = "private"
 )
@@ -29,7 +29,7 @@ try { & $git rev-parse HEAD 2>$null | Out-Null; $hasHead = $true } catch { }
 
 if (-not $hasHead) {
     & $git add -A
-    & $git -c "user.name=$login" -c "user.email=$email" commit -m "Initial commit: CAT PowerPoint add-in"
+    & $git -c "user.name=$login" -c "user.email=$email" commit -m "Initial commit: CAT PPT Plugin"
 }
 
 if (& $git remote 2>$null | Select-String -Pattern "^origin$" -Quiet) {
@@ -37,5 +37,5 @@ if (& $git remote 2>$null | Select-String -Pattern "^origin$" -Quiet) {
     exit 0
 }
 
-& $gh repo create $RepoName --$Visibility --source=. --remote=origin --push --description "CAT PowerPoint VSTO add-in (shortcuts, Auto format, Table Creator)"
+& $gh repo create $RepoName --$Visibility --source=. --remote=origin --push --description "CAT PPT Plugin - PowerPoint VSTO add-in"
 Write-Host "Done. Repository: https://github.com/$login/$RepoName"
