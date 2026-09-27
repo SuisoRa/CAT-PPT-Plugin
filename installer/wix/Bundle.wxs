@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?define ProductVersion = "1.0.0.0" ?>
+
+  <Bundle Name="CAT PowerPoint add-in"
+          Version="$(var.ProductVersion)"
+          Manufacturer="CAT"
+          UpgradeCode="8D5F0B3C-2E9A-4F7D-AC4B-3E6F9D2C1B05">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense">
+      <bal:WixStandardBootstrapperApplication LicenseUrl="" ShowVersion="yes" />
+    </BootstrapperApplicationRef>
+
+    <util:RegistrySearch Root="HKLM"
+                         Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+                         Value="Release"
+                         Variable="NetFx48Release"
+                         Result="value" />
+    <util:RegistrySearch Root="HKLM"
+                         Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+                         Value="Release"
+                         Variable="NetFx48ReleaseWow"
+                         Result="value"
+                         Win64="no" />
+
+    <util:RegistrySearch Root="HKLM"
+                         Key="SOFTWARE\Microsoft\VSTO Runtime Setup\v4R\VSTORFeature_CLR40"
+                         Variable="VstoClr40Installed"
+                         Result="exists" />
+
+    <Chain>
+      <ExePackage Id="NetFx48"
+                  SourceFile="$(var.PrereqsDir)\ndp48-x86-x64-allos-enu.exe"
+                  Cache="yes"
+                  PerMachine="yes"
+                  Permanent="yes"
+                  Vital="yes"
+                  InstallCommand="/q /norestart"
+                  RepairCommand="/q /norestart"
+                  DetectCondition="(NetFx48Release &gt;= 528040) OR (NetFx48ReleaseWow &gt;= 528040)"
+                  Compressed="yes">
+        <ExitCode Value="0" Behavior="success" />
+        <ExitCode Value="3010" Behavior="scheduleReboot" />
+      </ExePackage>
+
+      <ExePackage Id="VstoRuntime"
+                  SourceFile="$(var.PrereqsDir)\vstor_redist.exe"
+                  Cache="yes"
+                  PerMachine="yes"
+                  Permanent="yes"
+                  Vital="yes"
+                  InstallCommand="/q /norestart"
+                  RepairCommand="/q /norestart"
+                  DetectCondition="VstoClr40Installed"
+                  Compressed="yes">
+        <ExitCode Value="0" Behavior="success" />
+        <ExitCode Value="3010" Behavior="scheduleReboot" />
+      </ExePackage>
+
+      <MsiPackage Id="CatMsi"
+                  SourceFile="$(var.OutputDir)\CAT.msi"
+                  Vital="yes"
+                  Compressed="yes"
+                  DisplayInternalUI="no" />
+    </Chain>
+  </Bundle>
+</Wix>

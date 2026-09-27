@@ -13,6 +13,10 @@ Place your icons here:
 - Search matches any tag (e.g. `arrow blue` finds files whose tags contain both words).
 
 Open **CAT → Icon library** in PowerPoint. Icons are read from this folder automatically (no user path setting).
+
+**Installed (WiX):** `%LocalAppData%\Programs\CAT\icon-library\` — copy or replace SVGs there to update the catalog without reinstalling the add-in.
+
+**Development:** repo folder `assets/icon-library/` (or next to `CAT.dll` during F5).
 Double-click a tile to insert the SVG on the current slide. Choose accent colour or “enclosed in accent circle” in the dialog.
 
 Easier tagging later: we can add an optional `tags.txt` sidecar or a small JSON manifest per family if filenames get unwieldy — say if you want that.

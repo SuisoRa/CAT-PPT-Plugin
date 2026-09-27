@@ -1,0 +1,331 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="cmp52CA339561AD3ED8E928260541F782B5" Guid="F1958C13-0D02-4784-96CA-2A43408AB178">
+                <File Id="filFB99EEB3A8CDE8F2C3D2058980BE8B8A" KeyPath="yes" Source="$(var.StagedSource)\CAT.dll" />
+            </Component>
+            <Component Id="cmpA0F697A489E70E063EDE56DFABE73E7A" Guid="73FB2960-00BC-4047-8E51-77503ACA48FD">
+                <File Id="filC3B0189D243A815BD370990044FB80DF" KeyPath="yes" Source="$(var.StagedSource)\CAT.dll.config" />
+            </Component>
+            <Component Id="cmpE08DC62F1AA739B3ECFA1C7F78D2FA94" Guid="58D52590-7661-4B43-BE61-15A85EF3E5F0">
+                <File Id="fil6549B0D2132E51F62F4331E8BA4BA533" KeyPath="yes" Source="$(var.StagedSource)\CAT.dll.manifest" />
+            </Component>
+            <Component Id="cmpA59A85184C9FBFA325708D1A76DCC9C5" Guid="CF0EC53C-9E21-42E6-8D73-830DD5063634">
+                <File Id="filE4318B4E7926F4E08C116D086C364322" KeyPath="yes" Source="$(var.StagedSource)\CAT.vsto" />
+            </Component>
+            <Component Id="cmpADCE48FF76E53DAC76A025E7648FD219" Guid="27B74597-E20D-4B6B-B238-2AD75603F911">
+                <File Id="filC534544B7397ACDA78680FA5A82ABBDC" KeyPath="yes" Source="$(var.StagedSource)\Microsoft.Office.Tools.Common.v4.0.Utilities.dll" />
+            </Component>
+            <Component Id="cmp7688EF74DC3F4287CC0F8E45C28361D3" Guid="E1D70F17-75B8-4CA6-97E3-BDF8907B3D11">
+                <File Id="fil89563B50BBA53BB67252B47B8256AD06" KeyPath="yes" Source="$(var.StagedSource)\Microsoft.Office.Tools.dll" />
+            </Component>
+            <Component Id="cmpEA6C7049A237974135B17BC5B0CC17F8" Guid="7D512CAA-C661-4ED9-B69F-76600BF238C4">
+                <File Id="fil51AD879A1A5DB37DE3A0390B97234DAB" KeyPath="yes" Source="$(var.StagedSource)\Microsoft.Office.Tools.v4.0.Framework.dll" />
+            </Component>
+            <Component Id="cmpF8C27209FCD62C606A43AFAE70D21064" Guid="1C781122-3818-41A5-BD59-3712CA39466D">
+                <File Id="fil998E848FF584F739B76BBFEF15DD79F6" KeyPath="yes" Source="$(var.StagedSource)\Microsoft.VisualStudio.Tools.Applications.Runtime.dll" />
+            </Component>
+            <Directory Id="dir1943511B7536059701BC3FEDFB7F680A" Name="icon-library">
+                <Component Id="cmpEC774DC1CAEADED1D9CFEC06A3F00A75" Guid="7E825AD1-DF74-4172-8973-28C3007F3396">
+                    <File Id="fil7445F06922C494BC22B3E80D72E29DBB" KeyPath="yes" Source="$(var.StagedSource)\icon-library\README.txt" />
+                </Component>
+                <Directory Id="dir8CD945DA715C69517DE2AED72587F065" Name="Abstract">
+                    <Component Id="cmpB724AB215998F056BB813E2087971E7E" Guid="77A941DF-E68D-4EB6-A771-0187709A9A29">
+                        <File Id="fil4166BB692D86DAE7937046E07A546224" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Abstract\bell-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmpC8A349AA652BC12E61EE9687C801C88A" Guid="D54546E0-4F37-4B24-9995-15FE12FE3515">
+                        <File Id="fil385C433E333951B089D8107B82D5272B" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Abstract\bomb-emoji-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmpD2A1C59370052D54FB13E12133EB3BF0" Guid="D11B32BF-65EC-46ED-A6F3-55A163F96617">
+                        <File Id="fil8FA016A9FC4C22FD1AA97D2DE2AE22BB" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Abstract\bomb-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp2227BF01F235C606D36E045E751B1E08" Guid="7963D902-7D59-4FCF-8B23-E35E8015264D">
+                        <File Id="filEFB1FEE1BB5204CCE4009F265CA8AE1D" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Abstract\box-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmpBA5AC0B9A1A268E8F3F2ACDC69E5A7C5" Guid="D538A2FB-A3EC-446B-8460-26AFB4F98BF8">
+                        <File Id="fil2D93E17763818654236B47DA0BFF50C1" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Abstract\buildings-2-svgrepo-com.svg" />
+                    </Component>
+                </Directory>
+                <Directory Id="dir45AE996AC84F482F2D883616C48115F1" Name="Aligners">
+                    <Component Id="cmpC850645E7EE9E1B8486D6B827921B704" Guid="FF4CB58A-4297-4C64-8032-43B8412B0830">
+                        <File Id="filB0810EC7ADC0E5736E965B071E580E45" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Aligners\Battery-low-curve-abstract.svg" />
+                    </Component>
+                    <Component Id="cmpF79542C3F23F978342F69E16FF7295D6" Guid="2B093809-1072-4781-A053-6E3834E3F92C">
+                        <File Id="filDF27ADF42EBD6B9D69FC0C601652F522" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Aligners\bomb-minimalistic-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp1EB7AB1695BBD6955368E4EE3ECB94C4" Guid="12072306-D7D9-413E-9A59-F70CDB40576F">
+                        <File Id="fil7B5A9F954BD43CDDF866F90CCEEBFCCC" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Aligners\bottle-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp9EAAE5E85AD84ECCE52D7CF6499706AE" Guid="60ED9B44-C31B-49DB-B90F-02741913F808">
+                        <File Id="fil1EB97FB4DB17D47E4A4AA7ACDF4D1F84" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Aligners\camera-add-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmpB698EF3F936DDAA39FE468CF579160A1" Guid="BAC3607C-85A9-4182-8F63-1B46AEDBD7B4">
+                        <File Id="fil875AFC40B396192FAF8139BE656BF465" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Aligners\Lightining-arrow-circle-abstract.svg" />
+                    </Component>
+                </Directory>
+                <Directory Id="dir81605BAD5CEEDC86EBD79416AED983DD" Name="Asorted">
+                    <Component Id="cmp7E35FA070C8A31E149887423227F4323" Guid="05BE21A2-7759-47AE-875B-522258132EDC">
+                        <File Id="fil91B5B7F3F85EE8C67D4CC90290F79ECC" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Asorted\arrow-to-down-right-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp14FCE9E8C2585CDD4BABBABD1AB0DEAF" Guid="E1624A55-85A0-400D-96A7-F5000A64EC5E">
+                        <File Id="fil9D999F3FE3DFBEFB37387ADFA993531F" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Asorted\arrow-to-top-left-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp48AA0F8587925E155FBD4581C06D14BD" Guid="34C5DF6A-0102-4CB9-B5B2-5FA21A13599E">
+                        <File Id="fil7D2AB9AAEAD7628E003FF691971DF7AF" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Asorted\augmented-reality-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmpB65B26CE9C14C8FD896F8CC87D1B280C" Guid="CD290CB9-3BDC-4D14-8F3B-9B0E65618258">
+                        <File Id="filA20D010ACED77D29881A2396BCA20FF1" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Asorted\battery-full-svgrepo-com.svg" />
+                    </Component>
+                    <Component Id="cmp5AFD6C572094A04546484066035043F8" Guid="BC516D27-C67C-4409-B211-5974A4FF87C7">
+                        <File Id="fil605BB025830670DD526B163A3864A761" KeyPath="yes" Source="$(var.StagedSource)\icon-library\Asorted\battery-half-minimalistic-svgrepo-com.svg" />
+                    </Component>
+                </Directory>
+            </Directory>
+            <Directory Id="dir6500D4E4483298E5350D7F0C7716695D" Name="icons">
+                <Component Id="cmp27DE218886A70EAB5E8B067559748969" Guid="F0459C78-2CE2-446F-B8C3-19233E3E25A5">
+                    <File Id="fil907148B26EDF748812C0677620AA582C" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfBracketBottom.png" />
+                </Component>
+                <Component Id="cmpE19F970377B214CBC7AE8DCBFBBCCFB6" Guid="7F064CC5-E8C7-464A-9D17-0221AF85B277">
+                    <File Id="filEA0EB7A4CB885447C7D7AB613CA3A66A" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfBracketLeft.png" />
+                </Component>
+                <Component Id="cmp9994DB3E1A21BCAEC9FEE21E99B10174" Guid="73C5F91D-0A1D-4BEA-8860-91A896F419F9">
+                    <File Id="fil453CD7EB1D56B473434368A47C229E64" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfBracketRight.png" />
+                </Component>
+                <Component Id="cmp96333F58179E669A1AF1C76559FA5F7B" Guid="BA29F14A-AA83-4F31-8B1C-C6963CA2776D">
+                    <File Id="filA251FBFCE989D12A10D4DC6D4ECEA0F8" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfBracketTop.png" />
+                </Component>
+                <Component Id="cmpAA4B20610D25D803C1705A793167E64F" Guid="8BE665E4-F0A6-48D2-BE75-6680D75460A2">
+                    <File Id="fil56E6FE96FBB4664AFFAE4365A274F056" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfCalloutUp.png" />
+                </Component>
+                <Component Id="cmp384DD0FEB33A28A1F96D9BF86640E1A5" Guid="582E464E-A8C3-4459-BB09-9CE5BE1C6660">
+                    <File Id="fil764C2DCB9E35519866EEFD53C342E173" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfFootnote.png" />
+                </Component>
+                <Component Id="cmp75BC02EE90B208BCD18A834CFD0BBFF9" Guid="CC111B33-E3E4-4ED5-A8B6-61F388D49BBB">
+                    <File Id="fil748CCB2A3CC43E5AE376FD7118C57FE9" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfKeyTakeaway.png" />
+                </Component>
+                <Component Id="cmp38EC0C1975A9AFD6D59F339201B14D89" Guid="192D611A-7E15-4529-A61C-4F8BFEE0A2C7">
+                    <File Id="fil41B604A349EB4A1B511D1F05AFB1A5EA" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfLetters.png" />
+                </Component>
+                <Component Id="cmpBE578E8F0BE8E8B60B6EBD48A4D25D5A" Guid="732586B8-AFB4-46E3-AB57-D11F9067725A">
+                    <File Id="fil642D26B9CAACFE356294FF68FD88AB63" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfLinesH.png" />
+                </Component>
+                <Component Id="cmpBA65A6534D016710530D6E53E3E4DC29" Guid="FF916724-70CB-457A-8694-AAB66E083787">
+                    <File Id="filD07D7E87D8AACEB94E71BD5900B870D1" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfLinesV.png" />
+                </Component>
+                <Component Id="cmpF2706341482808BD06E73F860E2EEA37" Guid="0DEDB3FA-741C-416B-94FA-335F9530E93D">
+                    <File Id="fil8E139216D9BFA616126CDE6C58F87132" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfNumbers.png" />
+                </Component>
+                <Component Id="cmp0348D297EA2DC2038E5CF81FD814AE66" Guid="6D495A36-C9EE-430B-9258-8BFCE7824F10">
+                    <File Id="fil878824CE86900B4F21647DA25AA821C3" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfRectangle.png" />
+                </Component>
+                <Component Id="cmpD382263219D602134577A89F27FE0FCE" Guid="1BB28654-2FDD-4416-97E8-033EF331EAB1">
+                    <File Id="filB05949373EAE3A6C21052DB8D03358DD" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfSource.png" />
+                </Component>
+                <Component Id="cmpC367D534673578EB8CD6F61F1712A01A" Guid="382D30A6-B711-4E04-8FCA-ADA1CD57B41A">
+                    <File Id="fil0665C1F5E8AC80FC49C615C8C0A340A8" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfSquare.png" />
+                </Component>
+                <Component Id="cmpAED8FDDCB814B41E14893ECBBEB537A1" Guid="B0E1A87B-57DF-4125-AF57-527BDF89BF42">
+                    <File Id="fil12B637C14499A1F593DA952662B2CE18" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfSubtitle.png" />
+                </Component>
+                <Component Id="cmp2E2099F27200DB1CAD86B64146E70DD0" Guid="E48CD747-6A37-4B50-A623-451B5AB6E1F5">
+                    <File Id="fil9A4306758A3DA01B58BF8788767E4260" KeyPath="yes" Source="$(var.StagedSource)\icons\catAfTitle.png" />
+                </Component>
+                <Component Id="cmp942131D2F39CBFDF6FE762864FBA1B3E" Guid="7101AD39-7A60-46A2-AF8B-39804022E59D">
+                    <File Id="fil19D65FDC1EB92D310D6E32E7D48B5B47" KeyPath="yes" Source="$(var.StagedSource)\icons\catAlignCols.png" />
+                </Component>
+                <Component Id="cmp7A51E78002C32195C286F5CDD3E0C024" Guid="DC8CA222-8F5E-4347-B327-DE72AA787FCD">
+                    <File Id="filD81FF40F04D5E09F2D1240A364DCFDD8" KeyPath="yes" Source="$(var.StagedSource)\icons\catAlignRows.png" />
+                </Component>
+                <Component Id="cmpEBA45FE0B8C0451698060E3B568843A6" Guid="E931B47D-3C10-4CE2-9C7C-96553755A79B">
+                    <File Id="fil7068B35A960B8F138F26FC0B242B3DF1" KeyPath="yes" Source="$(var.StagedSource)\icons\catAutoFormat.png" />
+                </Component>
+                <Component Id="cmp34E7D5A4E8BB6CD4A7C78EC2D1EB4F3F" Guid="1B5FC2B3-D03C-48B4-807D-12912FE7C893">
+                    <File Id="fil443571C837BD3660D73B0D5074A0BB6C" KeyPath="yes" Source="$(var.StagedSource)\icons\catCopyExcel.png" />
+                </Component>
+                <Component Id="cmpCD298EBDAC0FA2B6925AC35460313325" Guid="743D02E9-9094-4AB0-B30C-90F0905F05C5">
+                    <File Id="filB74264676132E1A7ED272C3FF3CEFCD5" KeyPath="yes" Source="$(var.StagedSource)\icons\catCopyPos.png" />
+                </Component>
+                <Component Id="cmpE814E12CDC4F6D52519ADA7BC2098ED2" Guid="E4D7DCE0-2F01-4BDF-9A0C-F1EA57CBC36A">
+                    <File Id="fil722844D568630540C29F26046C708DB3" KeyPath="yes" Source="$(var.StagedSource)\icons\catCopySpacing.png" />
+                </Component>
+                <Component Id="cmp2E4B1E0F7BC6B7560B1DE2AAA5892C4A" Guid="67EC382F-BB65-414B-A1A3-FAF09E2BE4C5">
+                    <File Id="filE01DAACE2EC63F9BF2A0BB3B83C7DB4B" KeyPath="yes" Source="$(var.StagedSource)\icons\catDistH.png" />
+                </Component>
+                <Component Id="cmpC1DB591D0E37D4514A9B3D15B4D09D5E" Guid="3D4DBD49-0631-4E4E-A013-3F29194E1162">
+                    <File Id="filA3688DA3AE49E027A6FB41184FF40646" KeyPath="yes" Source="$(var.StagedSource)\icons\catDistV.png" />
+                </Component>
+                <Component Id="cmp6E0D4131888B41F4A938C2C787E215CF" Guid="FFCB6C06-E0D3-4C81-AFC3-B4A3C5BBE2B4">
+                    <File Id="fil0C97FA79B2F90BA7AAFB99050E194967" KeyPath="yes" Source="$(var.StagedSource)\icons\catFixTextBox.png" />
+                </Component>
+                <Component Id="cmpDD026CF5151D6178B268AC3A31CD2791" Guid="175CFDF5-600E-407D-A282-6E0669D6F0D1">
+                    <File Id="fil6963688FCFF7AFFC3E1BAE80D127E9C2" KeyPath="yes" Source="$(var.StagedSource)\icons\catFontAlt.png" />
+                </Component>
+                <Component Id="cmpE28FF169D01F9149BF55A18450373A63" Guid="494E2F05-0E9E-4EAD-B850-EA5426D3D960">
+                    <File Id="fil088A0829EFD239C6BDDA6283FE9E1C97" KeyPath="yes" Source="$(var.StagedSource)\icons\catHelp.png" />
+                </Component>
+                <Component Id="cmp9079324F4E734DE6387C973F70B0883D" Guid="326FC78E-2AA7-49F8-9EAB-B90148E30AC3">
+                    <File Id="fil54E56CB41CB78DA8D4A7464C692C1C1C" KeyPath="yes" Source="$(var.StagedSource)\icons\catIconLibrary.png" />
+                </Component>
+                <Component Id="cmpCB0A30FAFC0F3F9DDE0820D49C1158A1" Guid="83CF151E-3A6B-42F7-9A70-E64E31B49CFF">
+                    <File Id="filDE8EFCCDEA208032D2CB30D7D7C0B72D" KeyPath="yes" Source="$(var.StagedSource)\icons\catLineSpacing.png" />
+                </Component>
+                <Component Id="cmpB60888670BEA664BF51502D0A1615744" Guid="F13199E5-81A8-4A1C-AAB7-44A326DD3896">
+                    <File Id="filD109277B1FA3E38A7B83984E6F6C8557" KeyPath="yes" Source="$(var.StagedSource)\icons\catMakeHorizontal.png" />
+                </Component>
+                <Component Id="cmp81106D1C16366EE530375431D6BC63C8" Guid="0352E66C-1BE4-439C-94F9-8DA199DF5FB2">
+                    <File Id="filE455B9A5EA682FFD3533A43E7E0A414C" KeyPath="yes" Source="$(var.StagedSource)\icons\catMakeVertical.png" />
+                </Component>
+                <Component Id="cmp6BF9ED10D5258E72FB2C24DDF80FC5E8" Guid="60608F4F-095B-4423-81BE-CF02A7069F8C">
+                    <File Id="fil2B9DC0E701DB134AFEF48590FDE222D1" KeyPath="yes" Source="$(var.StagedSource)\icons\catNoResize.png" />
+                </Component>
+                <Component Id="cmpC369621949246E775835ED8C256158A8" Guid="D81B43C0-96CE-4D36-9B7B-0947704A55DD">
+                    <File Id="filF4C08C1812D7B394C2BCA085E14404D0" KeyPath="yes" Source="$(var.StagedSource)\icons\catNoWrap.png" />
+                </Component>
+                <Component Id="cmp366E19CA9E87F9552B02FE027C75537A" Guid="683C2C89-F7F2-4B7D-81A5-3D2C662AB37F">
+                    <File Id="filE4EA00127D902A1A05D71BDBA881FB53" KeyPath="yes" Source="$(var.StagedSource)\icons\catPastePos.png" />
+                </Component>
+                <Component Id="cmp1B8F43183B57D261D10D9A0CA204B568" Guid="336FDAF0-61E8-4C2B-B8E7-23DF0CDEE745">
+                    <File Id="filE64140077128AAC1D54EA48BA9F68179" KeyPath="yes" Source="$(var.StagedSource)\icons\catPasteSpacingH.png" />
+                </Component>
+                <Component Id="cmpFBBFB045FD479D72AAF946D46AFCDF49" Guid="A705AC35-A829-4586-AB0B-3C089375C0A2">
+                    <File Id="fil5856FC65C10337AB0998EDF793393FC5" KeyPath="yes" Source="$(var.StagedSource)\icons\catPasteSpacingV.png" />
+                </Component>
+                <Component Id="cmpCF795FA3B8E60963EE96EC6435B2B27F" Guid="65A2A3FC-692B-480D-AB90-814CFA638CA7">
+                    <File Id="fil5E7C8CA531282C8CC70F7D20DCE6F825" KeyPath="yes" Source="$(var.StagedSource)\icons\catReduceMargin.png" />
+                </Component>
+                <Component Id="cmp45B52B586551173C7456B2815D68BA13" Guid="1EB9DFFB-C44C-4ED7-A958-D5EC2CCC6944">
+                    <File Id="fil8F0A3825F855F824E550615A40D23B2D" KeyPath="yes" Source="$(var.StagedSource)\icons\catReset.png" />
+                </Component>
+                <Component Id="cmp0B1481D9A2D399FCC1F7DE554AAE52B9" Guid="DA5403B4-027E-4CEF-BD30-8AB1C0E02EE2">
+                    <File Id="fil93118BBCE23A842B7F0067C9C9B62F9C" KeyPath="yes" Source="$(var.StagedSource)\icons\catResize.png" />
+                </Component>
+                <Component Id="cmp74AC4643879AED168D3337B2E5FEF706" Guid="18366070-EC7C-4D22-A61D-C12177AFF4B0">
+                    <File Id="fil2085FD2AFA56C8DE93584522E0E2F022" KeyPath="yes" Source="$(var.StagedSource)\icons\catSameCornerRadius.png" />
+                </Component>
+                <Component Id="cmp7C0D72856862DAAE0F5427BCA9A81D45" Guid="451C6FE3-C789-4F5B-8476-F5D4AE6B6494">
+                    <File Id="filF3F71ECA96A228C06F7EAE99A3A61781" KeyPath="yes" Source="$(var.StagedSource)\icons\catSameH.png" />
+                </Component>
+                <Component Id="cmpF7DD17ADD2072FB4AC4E8B5AD532EB66" Guid="12430723-524E-484E-951E-09FC7E9F908D">
+                    <File Id="fil621C9D4DF9B26A0FD01B9DCEFFC9C67C" KeyPath="yes" Source="$(var.StagedSource)\icons\catSameSize.png" />
+                </Component>
+                <Component Id="cmpE8A68DB3D0FC8054B9302E2AA3E81BF6" Guid="676CE204-6356-4A5D-95D3-4FF0B4DEFDAE">
+                    <File Id="fil218333856D4060B68661F9C1E316C096" KeyPath="yes" Source="$(var.StagedSource)\icons\catSameW.png" />
+                </Component>
+                <Component Id="cmpD06315F046B8657E5C98502E4B33C879" Guid="03D74195-20ED-4B8F-B5DD-1CF459EBD316">
+                    <File Id="fil3C9DBC5EAC558F863CC5E3C5579A7DB8" KeyPath="yes" Source="$(var.StagedSource)\icons\catSelectSimilar.png" />
+                </Component>
+                <Component Id="cmp8A015A5BF94C338029A50D9B1DDBF23A" Guid="CFB387ED-8562-47A0-B3BC-7E9A09D5C363">
+                    <File Id="fil6344C67795F3C8FAB43DC667D0A1AACF" KeyPath="yes" Source="$(var.StagedSource)\icons\catSelectSimilarOptions.png" />
+                </Component>
+                <Component Id="cmpBB01CFD7CD675272E9FE94B7CA626465" Guid="4038596A-17CC-4145-95C1-9D6E9C92A842">
+                    <File Id="filC365176E8AE34A814A42EB89D3AB3B8D" KeyPath="yes" Source="$(var.StagedSource)\icons\catSplitJoin.png" />
+                </Component>
+                <Component Id="cmp5B21154CDA5B625F718AF55654963A5F" Guid="FEE4EA4F-6EDF-4D26-973E-4B8F845E59AD">
+                    <File Id="filD324AA56721E7D1562BFE057DAC3CC8E" KeyPath="yes" Source="$(var.StagedSource)\icons\catSwapPosition.png" />
+                </Component>
+                <Component Id="cmp5A420047FC41565069413063A627BB4B" Guid="5E82E643-99AE-47B5-9A63-569A94ECC68A">
+                    <File Id="fil6FBA375EC9DED05E349692F2FBBAB4B3" KeyPath="yes" Source="$(var.StagedSource)\icons\catTableCreator.png" />
+                </Component>
+                <Component Id="cmpF3F822DC817D14572D6C9DB468BB8DF9" Guid="A1B5FC91-F740-4EBA-87FE-222A07186668">
+                    <File Id="filD0B1B236CE88CFF405A66E1845F1C8B1" KeyPath="yes" Source="$(var.StagedSource)\icons\catTextBlock.png" />
+                </Component>
+                <Component Id="cmpEA4CB65862AB702B69C108859BAF2C14" Guid="BCB4E242-1980-4B89-ABC9-4D418B6CF89E">
+                    <File Id="filD12B1849CF4EC3CC157711B3AA72191F" KeyPath="yes" Source="$(var.StagedSource)\icons\catWrap.png" />
+                </Component>
+                <Component Id="cmp2397893347C37B26F7713DBAD264C665" Guid="D924DCCD-B2DE-4FF6-83A3-B64CA804EBF5">
+                    <File Id="fil8DF3B17F1CF87920246694A450441E98" KeyPath="yes" Source="$(var.StagedSource)\icons\list-numbered.png" />
+                </Component>
+            </Directory>
+            <Directory Id="dir7A8DEF2E8AAC601D39D1930F0F2FC7B6" Name="text-block">
+                <Component Id="cmp2CEC57F026CAE24602206C822D8579EC" Guid="F782645D-808B-455D-B36F-2D2561E311A3">
+                    <File Id="filE39051350FCFED28F871A66240B3F50D" KeyPath="yes" Source="$(var.StagedSource)\text-block\action-item-preview.png" />
+                </Component>
+                <Component Id="cmpD2F91FE8004F9C843AE7E8407E998C69" Guid="4AFF0531-5777-4EE8-8D52-027BD57AD636">
+                    <File Id="fil6EDAAAF8D333F1EDCA6A396B96FB3BBB" KeyPath="yes" Source="$(var.StagedSource)\text-block\chevron-preview.png" />
+                </Component>
+            </Directory>
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="CatStagedFiles">
+            <ComponentRef Id="cmp52CA339561AD3ED8E928260541F782B5" />
+            <ComponentRef Id="cmpA0F697A489E70E063EDE56DFABE73E7A" />
+            <ComponentRef Id="cmpE08DC62F1AA739B3ECFA1C7F78D2FA94" />
+            <ComponentRef Id="cmpA59A85184C9FBFA325708D1A76DCC9C5" />
+            <ComponentRef Id="cmpADCE48FF76E53DAC76A025E7648FD219" />
+            <ComponentRef Id="cmp7688EF74DC3F4287CC0F8E45C28361D3" />
+            <ComponentRef Id="cmpEA6C7049A237974135B17BC5B0CC17F8" />
+            <ComponentRef Id="cmpF8C27209FCD62C606A43AFAE70D21064" />
+            <ComponentRef Id="cmpEC774DC1CAEADED1D9CFEC06A3F00A75" />
+            <ComponentRef Id="cmpB724AB215998F056BB813E2087971E7E" />
+            <ComponentRef Id="cmpC8A349AA652BC12E61EE9687C801C88A" />
+            <ComponentRef Id="cmpD2A1C59370052D54FB13E12133EB3BF0" />
+            <ComponentRef Id="cmp2227BF01F235C606D36E045E751B1E08" />
+            <ComponentRef Id="cmpBA5AC0B9A1A268E8F3F2ACDC69E5A7C5" />
+            <ComponentRef Id="cmpC850645E7EE9E1B8486D6B827921B704" />
+            <ComponentRef Id="cmpF79542C3F23F978342F69E16FF7295D6" />
+            <ComponentRef Id="cmp1EB7AB1695BBD6955368E4EE3ECB94C4" />
+            <ComponentRef Id="cmp9EAAE5E85AD84ECCE52D7CF6499706AE" />
+            <ComponentRef Id="cmpB698EF3F936DDAA39FE468CF579160A1" />
+            <ComponentRef Id="cmp7E35FA070C8A31E149887423227F4323" />
+            <ComponentRef Id="cmp14FCE9E8C2585CDD4BABBABD1AB0DEAF" />
+            <ComponentRef Id="cmp48AA0F8587925E155FBD4581C06D14BD" />
+            <ComponentRef Id="cmpB65B26CE9C14C8FD896F8CC87D1B280C" />
+            <ComponentRef Id="cmp5AFD6C572094A04546484066035043F8" />
+            <ComponentRef Id="cmp27DE218886A70EAB5E8B067559748969" />
+            <ComponentRef Id="cmpE19F970377B214CBC7AE8DCBFBBCCFB6" />
+            <ComponentRef Id="cmp9994DB3E1A21BCAEC9FEE21E99B10174" />
+            <ComponentRef Id="cmp96333F58179E669A1AF1C76559FA5F7B" />
+            <ComponentRef Id="cmpAA4B20610D25D803C1705A793167E64F" />
+            <ComponentRef Id="cmp384DD0FEB33A28A1F96D9BF86640E1A5" />
+            <ComponentRef Id="cmp75BC02EE90B208BCD18A834CFD0BBFF9" />
+            <ComponentRef Id="cmp38EC0C1975A9AFD6D59F339201B14D89" />
+            <ComponentRef Id="cmpBE578E8F0BE8E8B60B6EBD48A4D25D5A" />
+            <ComponentRef Id="cmpBA65A6534D016710530D6E53E3E4DC29" />
+            <ComponentRef Id="cmpF2706341482808BD06E73F860E2EEA37" />
+            <ComponentRef Id="cmp0348D297EA2DC2038E5CF81FD814AE66" />
+            <ComponentRef Id="cmpD382263219D602134577A89F27FE0FCE" />
+            <ComponentRef Id="cmpC367D534673578EB8CD6F61F1712A01A" />
+            <ComponentRef Id="cmpAED8FDDCB814B41E14893ECBBEB537A1" />
+            <ComponentRef Id="cmp2E2099F27200DB1CAD86B64146E70DD0" />
+            <ComponentRef Id="cmp942131D2F39CBFDF6FE762864FBA1B3E" />
+            <ComponentRef Id="cmp7A51E78002C32195C286F5CDD3E0C024" />
+            <ComponentRef Id="cmpEBA45FE0B8C0451698060E3B568843A6" />
+            <ComponentRef Id="cmp34E7D5A4E8BB6CD4A7C78EC2D1EB4F3F" />
+            <ComponentRef Id="cmpCD298EBDAC0FA2B6925AC35460313325" />
+            <ComponentRef Id="cmpE814E12CDC4F6D52519ADA7BC2098ED2" />
+            <ComponentRef Id="cmp2E4B1E0F7BC6B7560B1DE2AAA5892C4A" />
+            <ComponentRef Id="cmpC1DB591D0E37D4514A9B3D15B4D09D5E" />
+            <ComponentRef Id="cmp6E0D4131888B41F4A938C2C787E215CF" />
+            <ComponentRef Id="cmpDD026CF5151D6178B268AC3A31CD2791" />
+            <ComponentRef Id="cmpE28FF169D01F9149BF55A18450373A63" />
+            <ComponentRef Id="cmp9079324F4E734DE6387C973F70B0883D" />
+            <ComponentRef Id="cmpCB0A30FAFC0F3F9DDE0820D49C1158A1" />
+            <ComponentRef Id="cmpB60888670BEA664BF51502D0A1615744" />
+            <ComponentRef Id="cmp81106D1C16366EE530375431D6BC63C8" />
+            <ComponentRef Id="cmp6BF9ED10D5258E72FB2C24DDF80FC5E8" />
+            <ComponentRef Id="cmpC369621949246E775835ED8C256158A8" />
+            <ComponentRef Id="cmp366E19CA9E87F9552B02FE027C75537A" />
+            <ComponentRef Id="cmp1B8F43183B57D261D10D9A0CA204B568" />
+            <ComponentRef Id="cmpFBBFB045FD479D72AAF946D46AFCDF49" />
+            <ComponentRef Id="cmpCF795FA3B8E60963EE96EC6435B2B27F" />
+            <ComponentRef Id="cmp45B52B586551173C7456B2815D68BA13" />
+            <ComponentRef Id="cmp0B1481D9A2D399FCC1F7DE554AAE52B9" />
+            <ComponentRef Id="cmp74AC4643879AED168D3337B2E5FEF706" />
+            <ComponentRef Id="cmp7C0D72856862DAAE0F5427BCA9A81D45" />
+            <ComponentRef Id="cmpF7DD17ADD2072FB4AC4E8B5AD532EB66" />
+            <ComponentRef Id="cmpE8A68DB3D0FC8054B9302E2AA3E81BF6" />
+            <ComponentRef Id="cmpD06315F046B8657E5C98502E4B33C879" />
+            <ComponentRef Id="cmp8A015A5BF94C338029A50D9B1DDBF23A" />
+            <ComponentRef Id="cmpBB01CFD7CD675272E9FE94B7CA626465" />
+            <ComponentRef Id="cmp5B21154CDA5B625F718AF55654963A5F" />
+            <ComponentRef Id="cmp5A420047FC41565069413063A627BB4B" />
+            <ComponentRef Id="cmpF3F822DC817D14572D6C9DB468BB8DF9" />
+            <ComponentRef Id="cmpEA4CB65862AB702B69C108859BAF2C14" />
+            <ComponentRef Id="cmp2397893347C37B26F7713DBAD264C665" />
+            <ComponentRef Id="cmp2CEC57F026CAE24602206C822D8579EC" />
+            <ComponentRef Id="cmpD2F91FE8004F9C843AE7E8407E998C69" />
+        </ComponentGroup>
+    </Fragment>
+</Wix>

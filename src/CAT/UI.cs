@@ -11,6 +11,8 @@ using WinForms = System.Windows.Forms;
 using System.Windows.Markup;
 using System.Windows.Media;
 using Cat.TableCreator;
+using Cat.TextBlocks;
+using Cat.Tools;
 using Cat.AutoFormat;
 using Cat.Commands;
 using Cat.Core;
@@ -252,22 +254,23 @@ namespace Cat.UI
         private static void AddLevel(ComboBox cb, string text, int tag) =>
             cb.Items.Add(new ComboBoxItem { Content = text, Tag = tag });
 
-        public static LineSpacingResult ShowLineSpacing()
+        public static LineSpacingResult ShowLineSpacing(double[] currentLines)
         {
             var result = new LineSpacingResult();
             var win = NewWindow("List Line Spacing", 340);
 
             var root = new StackPanel { Margin = new Thickness(20) };
             root.Children.Add(new TextBlock { Text = "List Line Spacing", Style = (Style)win.Resources["Title"] });
+            root.Children.Add(new TextBlock
+            {
+                Text = "Spacing is in lines. Values show the current spacing of the text box.",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x6B, 0x6B, 0x6B)),
+                Margin = new Thickness(0, 0, 0, 12)
+            });
 
             var chkAuto = new CheckBox { Content = "Auto (single spacing)", Margin = new Thickness(0, 0, 0, 12) };
             root.Children.Add(chkAuto);
-
-            var rbLines = new RadioButton { Content = "Lines", GroupName = "units", IsChecked = true };
-            var rbPoints = new RadioButton { Content = "Points", GroupName = "units" };
-            var unitRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
-            unitRow.Children.Add(rbLines); unitRow.Children.Add(rbPoints);
-            root.Children.Add(unitRow);
 
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -280,7 +283,16 @@ namespace Cat.UI
                 var lbl = new TextBlock { Text = $"Level {i + 1}", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 0, 4) };
                 Grid.SetRow(lbl, i); Grid.SetColumn(lbl, 0); grid.Children.Add(lbl);
 
-                var box = new TextBox { Width = 56, Text = "1.0", TextAlignment = TextAlignment.Center, Margin = new Thickness(6, 0, 6, 0) };
+                double start = 1;
+                if (currentLines != null && i < currentLines.Length && currentLines[i] >= 0)
+                    start = currentLines[i];
+                var box = new TextBox
+                {
+                    Width = 56,
+                    Text = start.ToString("0.0#", CultureInfo.InvariantCulture),
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(6, 0, 6, 0)
+                };
                 var dec = Styled("\u2212", "Stepper", win);
                 var inc = Styled("+", "Stepper", win);
                 dec.Click += (s, e) => Step(box, -0.1);
@@ -315,7 +327,7 @@ namespace Cat.UI
             RoutedEventHandler autoToggle = (s, e) =>
             {
                 bool auto = chkAuto.IsChecked == true;
-                grid.IsEnabled = !auto; unitRow.IsEnabled = !auto; setRow.IsEnabled = !auto;
+                grid.IsEnabled = !auto; setRow.IsEnabled = !auto;
             };
             chkAuto.Checked += autoToggle; chkAuto.Unchecked += autoToggle;
 
@@ -324,7 +336,7 @@ namespace Cat.UI
             {
                 result.Ok = true;
                 result.Auto = chkAuto.IsChecked == true;
-                result.InLines = rbLines.IsChecked == true;
+                result.InLines = true;
                 for (int i = 0; i < 5; i++) result.Values[i] = Parse(fields[i].Text);
                 win.DialogResult = true; win.Close();
             };
@@ -447,6 +459,9 @@ namespace Cat.UI
             { "catAlignCols", () => new AlignColumnsAndGroupCommand() },
             { "catDistH", () => new DistributeHorizontallyCommand() },
             { "catDistV", () => new DistributeVerticallyCommand() },
+            { "catCopySpacing", () => new CopySpacingCommand() },
+            { "catPasteSpacingV", () => new PasteVerticalSpacingCommand() },
+            { "catPasteSpacingH", () => new PasteHorizontalSpacingCommand() },
             { "catCopyPos", () => new CopyPositionCommand() },
             { "catPastePos", () => new PastePositionCommand() },
             { "catSameH", () => new MakeSameHeightCommand() },
@@ -460,6 +475,8 @@ namespace Cat.UI
             { "catNoWrap", () => new DoNotWordWrapCommand() },
             { "catLineSpacing", () => new ListLineSpacingCommand() },
             { "catFixTextBox", () => new FixTextBoxCommand() },
+            { "catFontAlt", () => new FontColorAlternatorCommand() },
+            { "catReduceMargin", () => new ReduceTextMarginCommand() },
             { "catSelectSimilar", () => new SelectSimilarCommand(true, true, true) },
             { "catCopyExcel", () => new CopyForExcelCommand() },
             { "catSwapPosition", () => new SwapObjectPositionCommand() },
@@ -477,13 +494,14 @@ namespace Cat.UI
         /// <summary>Every ribbon control that uses getImage="GetImage".</summary>
         private static readonly string[] RibbonIconControlIds =
         {
-            "catAutoFormat", "catTableCreator", "catIconLibrary",
+            "catAutoFormat", "catTableCreator", "catTextBlock", "catIconLibrary",
             "catMakeVertical", "catMakeHorizontal",
             "catSelectSimilar", "catSelectSimilarOptions", "catCopyExcel",
             "catAlignRows", "catAlignCols", "catDistH", "catDistV",
+            "catCopySpacing", "catPasteSpacingV", "catPasteSpacingH",
             "catCopyPos", "catPastePos", "catSameH", "catSameW", "catSameSize",
             "catResize", "catNoResize", "catSplitJoin", "catWrap", "catNoWrap",
-            "catLineSpacing", "catFixTextBox", "catReset",
+            "catLineSpacing", "catFixTextBox", "catFontAlt", "catReduceMargin", "catReset",
             "catSwapPosition", "catSameCornerRadius", "catHelp"
         };
 
@@ -568,6 +586,11 @@ namespace Cat.UI
                     TableCreatorWindow.Show();
                     return;
                 }
+                if (control.Id == "catTextBlock")
+                {
+                    TextBlockWindow.Show();
+                    return;
+                }
                 if (control.Id == "catSelectSimilarOptions")
                 {
                     var r = Dialogs.ShowSelectSimilar();
@@ -593,10 +616,66 @@ namespace Cat.UI
             {
                 string id = c?.Id ?? "";
                 if (string.IsNullOrEmpty(id)) return null;
+                if (id == "catAlignByFirst")
+                    return AlignByFirstGlyph(AddInSettings.AlignByFirst);
                 if (_iconCache.TryGetValue(id, out var cached)) return cached;
                 return TryCacheRibbonImage(id);
             }
             catch { return null; }
+        }
+
+        private static System.Drawing.Bitmap _alignOffBmp;
+        private static System.Drawing.Bitmap _alignOnBmp;
+        private static stdole.IPictureDisp _alignOffPic;
+        private static stdole.IPictureDisp _alignOnPic;
+
+        private static stdole.IPictureDisp AlignByFirstGlyph(bool on)
+        {
+            if (on)
+            {
+                if (_alignOnPic == null)
+                {
+                    _alignOnBmp = DrawAlignCheckbox(true);
+                    _alignOnPic = RibbonPictureConverter.FromBitmap(_alignOnBmp);
+                }
+                return _alignOnPic;
+            }
+            if (_alignOffPic == null)
+            {
+                _alignOffBmp = DrawAlignCheckbox(false);
+                _alignOffPic = RibbonPictureConverter.FromBitmap(_alignOffBmp);
+            }
+            return _alignOffPic;
+        }
+
+        private static System.Drawing.Bitmap DrawAlignCheckbox(bool check)
+        {
+            var bmp = new System.Drawing.Bitmap(32, 32, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                g.Clear(System.Drawing.Color.Transparent);
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                var box = new System.Drawing.Rectangle(7, 7, 17, 17);
+                using (var fill = new System.Drawing.SolidBrush(System.Drawing.Color.White))
+                    g.FillRectangle(fill, box);
+                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(0x60, 0x60, 0x60), 1.6f))
+                    g.DrawRectangle(pen, box);
+                if (check)
+                {
+                    using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(0x0F, 0x6C, 0xBD), 2.2f))
+                    {
+                        pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+                        pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                        g.DrawLines(pen, new[]
+                        {
+                            new System.Drawing.Point(11, 16),
+                            new System.Drawing.Point(15, 21),
+                            new System.Drawing.Point(22, 11)
+                        });
+                    }
+                }
+            }
+            return bmp;
         }
 
         private static string GetResourceText(string resourceName)

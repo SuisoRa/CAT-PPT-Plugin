@@ -17,6 +17,12 @@
                   screentip="Create text-box tables from size or clipboard" />
         </group>
 
+        <group id="catTextBlockGroup" label="Text block">
+          <button id="catTextBlock" label="Text block" size="large"
+                  onAction="OnAction" getImage="GetImage"
+                  screentip="Insert chevron text blocks; Ctrl+T toggles chevron style" />
+        </group>
+
         <group id="catLibraryGroup" label="Icons">
           <button id="catIconLibrary" label="Icon library" size="large"
                   onAction="OnAction" getImage="GetImage"
@@ -25,8 +31,8 @@
 
         <group id="catAlignOrderGroup" label="Align order">
           <box id="catAlignOrderBox" boxStyle="vertical">
-            <checkBox id="catAlignByFirst" label="Align by first"
-                      getPressed="GetAlignByFirst" onAction="OnAlignByFirst"
+            <toggleButton id="catAlignByFirst" label="Align by first" size="normal"
+                      getImage="GetImage" getPressed="GetAlignByFirst" onAction="OnAlignByFirst"
                       screentip="When checked, align to the first-selected shape"
                       supertip="Off: current rules (leftmost / topmost / slide for one shape). On: every align uses the first shape you selected as the anchor." />
             <button id="catMakeVertical" label="Make vertical" size="normal" getImage="GetImage" onAction="OnAction"
@@ -61,6 +67,12 @@
         <group id="catDistributingGroup" label="Distributing">
           <button id="catDistH" label="Distribute horizontally" size="large" getImage="GetImage" onAction="OnAction" screentip="Alt+Shift+H" />
           <button id="catDistV" label="Distribute vertically" size="large" getImage="GetImage" onAction="OnAction" screentip="Alt+Shift+V" />
+          <button id="catCopySpacing" label="Copy spacing" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Copy the horizontal and vertical gap between two objects" />
+          <button id="catPasteSpacingV" label="Paste vertical spacing" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Apply the copied vertical gap between the selected objects" />
+          <button id="catPasteSpacingH" label="Paste horizontal spacing" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Apply the copied horizontal gap between the selected objects" />
         </group>
 
         <group id="catPositionGroup" label="Position">
@@ -104,6 +116,19 @@
                   screentip="Keyboard shortcuts" supertip="Opens a list of all CAT shortcut keys." />
         </group>
 
+      </tab>
+
+      <tab idMso="TabHome">
+        <group id="catToolsFontGroup" label="CAT tools" insertAfterMso="GroupVoice">
+          <button id="catFontAlt" label="Font colour" size="normal" showLabel="false"
+                  getImage="GetImage" onAction="OnAction"
+                  screentip="Font colour"
+                  supertip="Cycle font colour: Text 1, Text 2, white" />
+          <button id="catReduceMargin" label="Reduce margin" size="normal" showLabel="false"
+                  getImage="GetImage" onAction="OnAction"
+                  screentip="Reduce margin"
+                  supertip="Reduce text box internal margins by 1 pt on each side (minimum 0)." />
+        </group>
       </tab>
     </tabs>
   </ribbon>

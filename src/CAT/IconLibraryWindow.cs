@@ -26,7 +26,7 @@ namespace Cat.UI
         {
             if (_open != null) { _open.Activate(); return; }
 
-            var win = Dialogs.NewShellWindow("Icon library", 860, 580);
+            var win = Dialogs.NewShellWindow("Icon library", 860, 620);
 
             var root = new Grid { Margin = new Thickness(20) };
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -53,23 +53,34 @@ namespace Cat.UI
             Grid.SetRow(search, 1);
             root.Children.Add(search);
 
-            var options = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
-            options.Children.Add(new TextBlock { Text = "Icon colour:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-            var colour = new ComboBox
-            {
-                Width = 180,
-                Height = 32,
-                VerticalContentAlignment = VerticalAlignment.Center
-            };
+            var options = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+            var colour = new ComboBox { Width = 160, Height = 32, VerticalContentAlignment = VerticalAlignment.Center };
+            var iconHex = OutlineHexBox();
+            var encColour = new ComboBox { Width = 160, Height = 32, VerticalContentAlignment = VerticalAlignment.Center };
+            var encHex = FillHexBox();
             PopulateAccentCombo(colour);
-            options.Children.Add(colour);
+            PopulateAccentCombo(encColour);
+
+            var iconRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            iconRow.Children.Add(Label("Outline colour"));
+            iconRow.Children.Add(colour);
+            iconRow.Children.Add(Label("Hex", true));
+            iconRow.Children.Add(iconHex);
+            options.Children.Add(iconRow);
+
+            var encRow = new StackPanel { Orientation = Orientation.Horizontal };
             var enclosed = new CheckBox
             {
-                Content = "Enclosed in accent circle",
-                Margin = new Thickness(16, 0, 0, 0),
+                Content = "Enclosed in circle",
+                Margin = new Thickness(0, 0, 12, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
-            options.Children.Add(enclosed);
+            encRow.Children.Add(enclosed);
+            encRow.Children.Add(Label("Fill colour"));
+            encRow.Children.Add(encColour);
+            encRow.Children.Add(Label("Hex", true));
+            encRow.Children.Add(encHex);
+            options.Children.Add(encRow);
             Grid.SetRow(options, 2);
             root.Children.Add(options);
 
@@ -104,13 +115,6 @@ namespace Cat.UI
 
             List<IconEntry> all = new List<IconEntry>();
             string selectedFamily = null;
-
-            Office.MsoThemeColorSchemeIndex? SelectedAccent()
-            {
-                if (colour.SelectedItem is ComboBoxItem item && item.Tag is Office.MsoThemeColorSchemeIndex idx)
-                    return idx;
-                return null;
-            }
 
             void ReloadCatalog()
             {
@@ -228,8 +232,18 @@ namespace Cat.UI
                         {
                             string path = entry.Path;
                             bool enc = enclosed.IsChecked == true;
-                            Office.MsoThemeColorSchemeIndex? acc = SelectedAccent();
-                            UiThreadRunner.Run(() => IconCatalog.Insert(path, acc, enc));
+                            if (!TryResolveColor(colour, iconHex, out int iconRgb, out string iconErr))
+                            {
+                                Notifier.Info(iconErr);
+                                return;
+                            }
+                            int enclosureRgb = iconRgb;
+                            if (enc && !TryResolveColor(encColour, encHex, out enclosureRgb, out string encErr))
+                            {
+                                Notifier.Info(encErr);
+                                return;
+                            }
+                            UiThreadRunner.Run(() => IconCatalog.Insert(path, iconRgb, enc, enclosureRgb));
                         }
                     };
 
@@ -253,12 +267,65 @@ namespace Cat.UI
             win.Show();
         }
 
+        private static TextBlock Label(string text, bool gapBefore = false) => new TextBlock
+        {
+            Text = text,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(gapBefore ? 12 : 0, 0, 8, 0)
+        };
+
+        private static TextBox HexBox() => new TextBox
+        {
+            Width = 92,
+            Height = 32,
+            Margin = new Thickness(0, 0, 0, 0),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            ToolTip = "Optional #RGB or #RRGGBB. Empty uses the accent picker."
+        };
+
+        private static TextBox OutlineHexBox()
+        {
+            var box = HexBox();
+            box.ToolTip = "Outline (icon line). Optional hex; empty uses accent.";
+            return box;
+        }
+
+        private static TextBox FillHexBox()
+        {
+            var box = HexBox();
+            box.ToolTip = "Fill (circle behind icon). Optional hex; empty uses accent.";
+            return box;
+        }
+
+        private static bool TryResolveColor(ComboBox accents, TextBox hex, out int rgb, out string error)
+        {
+            rgb = 0;
+            error = null;
+            string raw = hex?.Text?.Trim() ?? "";
+            if (raw.Length > 0)
+            {
+                if (!SvgIconHelper.TryParseHexRgb(raw, out rgb))
+                {
+                    error = "Enter a hex colour as #RGB or #RRGGBB, or leave the box empty to use the accent.";
+                    return false;
+                }
+                return true;
+            }
+
+            PowerPoint.Slide slide = null;
+            try { slide = ThisAddIn.Instance?.App?.ActiveWindow?.View?.Slide as PowerPoint.Slide; } catch { }
+            var accent = Office.MsoThemeColorSchemeIndex.msoThemeAccent1;
+            if (accents?.SelectedItem is ComboBoxItem item && item.Tag is Office.MsoThemeColorSchemeIndex idx)
+                accent = idx;
+            rgb = slide != null ? SvgIconHelper.AccentRgb(slide, accent) : DefaultAccentRgb(accent);
+            return true;
+        }
+
         private static void PopulateAccentCombo(ComboBox colour)
         {
             PowerPoint.Slide slide = null;
             try { slide = ThisAddIn.Instance?.App?.ActiveWindow?.View?.Slide as PowerPoint.Slide; } catch { }
 
-            colour.Items.Add(MakeAccentItem("Original", null, slide));
             for (int i = 1; i <= 6; i++)
             {
                 var idx = (Office.MsoThemeColorSchemeIndex)((int)Office.MsoThemeColorSchemeIndex.msoThemeAccent1 + i - 1);
@@ -280,23 +347,13 @@ namespace Cat.UI
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC)),
                 BorderThickness = new Thickness(1)
             };
-            if (accent == null)
-            {
-                swatch.Background = new LinearGradientBrush(
-                    Color.FromRgb(0x66, 0x66, 0x66),
-                    Color.FromRgb(0xCC, 0xCC, 0xCC),
-                    45);
-            }
-            else
-            {
-                int rgb = slide != null
-                    ? SvgIconHelper.AccentRgb(slide, accent.Value)
-                    : DefaultAccentRgb(accent.Value);
-                swatch.Background = new SolidColorBrush(Color.FromRgb(
-                    (byte)(rgb & 0xFF),
-                    (byte)((rgb >> 8) & 0xFF),
-                    (byte)((rgb >> 16) & 0xFF)));
-            }
+            int rgb = slide != null
+                ? SvgIconHelper.AccentRgb(slide, accent ?? Office.MsoThemeColorSchemeIndex.msoThemeAccent1)
+                : DefaultAccentRgb(accent ?? Office.MsoThemeColorSchemeIndex.msoThemeAccent1);
+            swatch.Background = new SolidColorBrush(Color.FromRgb(
+                (byte)(rgb & 0xFF),
+                (byte)((rgb >> 8) & 0xFF),
+                (byte)((rgb >> 16) & 0xFF)));
             row.Children.Add(swatch);
             row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
             return new ComboBoxItem
@@ -377,7 +434,7 @@ namespace Cat.UI
         /// Insert as native SVG (vector). PowerPoint keeps it editable — Convert to Shape / Ungroup.
         /// Falls back to PNG only if SVG insert fails on the host.
         /// </summary>
-        public static void Insert(string svgPath, Office.MsoThemeColorSchemeIndex? accent, bool enclosed)
+        public static void Insert(string svgPath, int iconRgb, bool enclosed, int enclosureRgb)
         {
             string tempSvg = null;
             string tempPng = null;
@@ -388,13 +445,8 @@ namespace Cat.UI
                 if (slide == null) { Notifier.Info("Open a slide first."); return; }
 
                 string pathToUse = svgPath;
-                int accentRgb = 0;
-                if (accent.HasValue)
-                {
-                    accentRgb = SvgIconHelper.AccentRgb(slide, accent.Value);
-                    tempSvg = SvgIconHelper.WriteTintedTempFile(svgPath, SvgIconHelper.RgbToHex(accentRgb));
-                    pathToUse = tempSvg;
-                }
+                tempSvg = SvgIconHelper.WriteOutlineTintedTempFile(svgPath, SvgIconHelper.RgbToHex(iconRgb));
+                pathToUse = tempSvg;
 
                 float sw = CommandContext.SlideWidth(slide);
                 float sh = CommandContext.SlideHeight(slide);
@@ -422,15 +474,13 @@ namespace Cat.UI
                     return;
                 }
 
-                if (!accent.HasValue)
-                    accentRgb = SvgIconHelper.AccentRgb(slide, Office.MsoThemeColorSchemeIndex.msoThemeAccent1);
-
                 // Circle behind icon; group so user can Ungroup later and keep both pieces.
                 var circle = slide.Shapes.AddShape(Office.MsoAutoShapeType.msoShapeOval, left, top, outer, outer);
                 circle.Fill.Visible = Office.MsoTriState.msoTrue;
                 circle.Fill.Solid();
-                circle.Fill.ForeColor.RGB = accentRgb;
+                circle.Fill.ForeColor.RGB = enclosureRgb;
                 circle.Line.Visible = Office.MsoTriState.msoFalse;
+                try { circle.Line.Weight = 0f; } catch { }
                 try { circle.ZOrder(Office.MsoZOrderCmd.msoSendToBack); } catch { }
 
                 const float inset = 14f;

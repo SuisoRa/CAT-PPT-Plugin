@@ -74,7 +74,7 @@ namespace Cat.TableCreator
                 ShapeHelpers.SetAutoSize(tb, PowerPoint.PpAutoSize.ppAutoSizeNone);
 
                 var tr = tf.TextRange;
-                tr.Text = text ?? "";
+                tr.Text = Cmd.TextOrPlaceholder(text);
                 tr.Font.Name = themeFont;
                 tr.Font.Size = isHeader ? style.HeaderFontSizePt : style.BodyFontSizePt;
                 tr.Font.Bold = isHeader && style.HeaderBold

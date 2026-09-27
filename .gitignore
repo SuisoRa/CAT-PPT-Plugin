@@ -12,3 +12,8 @@
 *.pdb
 Thumbs.db
 Desktop.ini
+
+installer/staging/
+installer/output/
+installer/wix/_build/
+installer/prereqs/*.exe

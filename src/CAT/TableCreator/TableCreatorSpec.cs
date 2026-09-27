@@ -11,7 +11,7 @@ namespace Cat.TableCreator
         public const float GapBelowTitlePt = 12f;
         public const float SlideMarginPt = 36f;
         public const float CellGapPt = 2f;
-        public const string DummyCellText = "text";
+        public const string DummyCellText = "Text";
         public const int MinDimension = 1;
         public const int MaxDimension = 50;
     }

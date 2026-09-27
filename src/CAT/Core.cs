@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Cat.Commands;
+using Cat.TextBlocks;
 using Microsoft.Win32;
 using Office = Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
@@ -28,6 +29,7 @@ namespace Cat.Core
 
         public static KeyCombo Ctrl(Keys k)         => new KeyCombo(true, false, false, k);
         public static KeyCombo Alt(Keys k)          => new KeyCombo(false, true, false, k);
+        public static KeyCombo Shift(Keys k)        => new KeyCombo(false, false, true, k);
         public static KeyCombo CtrlAlt(Keys k)      => new KeyCombo(true, true, false, k);
         public static KeyCombo CtrlShift(Keys k)    => new KeyCombo(true, false, true, k);
         public static KeyCombo AltShift(Keys k)     => new KeyCombo(false, true, true, k);
@@ -195,6 +197,9 @@ namespace Cat.Core
             if (command is InsertNewSlideCommand
                 && combo.HasCtrl && !combo.HasAlt && !combo.HasShift
                 && (NativeMethods.GetAsyncKeyState(NativeMethods.VK_MENU) & 0x8000) != 0)
+                return false;
+
+            if (command is ChevronToggleCommand && !ChevronTextBlockService.SelectionToggleAvailable)
                 return false;
 
             _pending = command;
@@ -373,6 +378,7 @@ namespace Cat.Core
                 { KeyCombo.CtrlShift(Keys.D8),              new DoNotResizeCommand() },
                 { KeyCombo.Ctrl(Keys.D8),                   new ResizeCommand() },
                 { KeyCombo.Ctrl(Keys.D5),                   new FitToWindowCommand() },
+                { KeyCombo.Shift(Keys.Delete),              new ClearSelectedTextCommand() },
                 { KeyCombo.CtrlShift(Keys.E),               new MakeSameHeightCommand() },
                 { KeyCombo.Alt(Keys.Z),                     new MakeSameSizeCommand() },
                 { KeyCombo.CtrlAlt(Keys.E),                 new MakeSameWidthCommand() },
@@ -381,6 +387,7 @@ namespace Cat.Core
                 { KeyCombo.Ctrl(Keys.M),                    new InsertNewSlideCommand() },
                 { KeyCombo.Alt(Keys.Q),                     new InsertTextboxCommand() },
                 { KeyCombo.Ctrl(Keys.D0),                   new InsertYellowStickyCommand() },
+                { KeyCombo.Ctrl(Keys.T),                   new ChevronToggleCommand() },
                 { KeyCombo.CtrlAlt(Keys.T),                 new PasteUnformattedTextCommand() },
                 { KeyCombo.AltShift(Keys.A),                new CycleAccentColorsCommand() },
                 { KeyCombo.AltShift(Keys.Right),            new IncreaseListLevelCommand() },
@@ -414,6 +421,7 @@ namespace Cat.Core
 
         private void OnSelectionChange(PowerPoint.Selection sel)
         {
+            try { ChevronTextBlockService.RefreshSelectionToggleAvailability(sel); } catch { }
             try
             {
                 if (sel == null || sel.Type != PowerPoint.PpSelectionType.ppSelectionShapes)
@@ -461,6 +469,21 @@ namespace Cat.Core
         public void Clear() => _slots.Clear();
         public void Add(float l, float t) => _slots.Add(new Slot(l, t));
         public Slot this[int i] => _slots[i];
+    }
+
+    /// <summary>Gap between two shapes, in points. Horizontal is edge-to-edge left-to-right; vertical is top-to-bottom.</summary>
+    public sealed class SpacingClipboard
+    {
+        public bool HasData { get; private set; }
+        public float Horizontal { get; private set; }
+        public float Vertical { get; private set; }
+
+        public void Set(float horizontal, float vertical)
+        {
+            Horizontal = horizontal;
+            Vertical = vertical;
+            HasData = true;
+        }
     }
 
     public static class IconRepository

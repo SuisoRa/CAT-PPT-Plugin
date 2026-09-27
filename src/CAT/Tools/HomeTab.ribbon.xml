@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+  Loaded from Ribbon.xml on the Home tab.
+
+  PowerPoint's Customize Ribbon list "All Commands" only shows built-in Office
+
+  commands, so these buttons cannot appear there. Group is appended near the end of Home.
+
+-->
+
+<tab idMso="TabHome">
+
+  <group id="catToolsFontGroup" label="CAT tools" insertAfterMso="GroupVoice">
+
+    <button id="catFontAlt" label="Font colour" size="normal" showLabel="false"
+
+            getImage="GetImage" onAction="OnAction"
+
+            screentip="Font colour"
+
+            supertip="Cycle font colour: Text 1, Text 2, white" />
+
+    <button id="catReduceMargin" label="Reduce margin" size="normal" showLabel="false"
+
+            getImage="GetImage" onAction="OnAction"
+
+            screentip="Reduce margin"
+
+            supertip="Reduce text box internal margins by 1 pt on each side (minimum 0)." />
+
+  </group>
+
+</tab>
+

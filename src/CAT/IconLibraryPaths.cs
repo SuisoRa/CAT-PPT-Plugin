@@ -3,27 +3,30 @@ using System.IO;
 
 namespace Cat.Core
 {
-    /// <summary>Fixed icon library location under the CAT project assets folder.</summary>
+    /// <summary>
+    /// SVG icon library folder. On installed machines: {CAT install dir}\icon-library
+    /// (drop-in updates without reinstall). Dev: repo assets\icon-library or walk-up from bin.
+    /// </summary>
     public static class IconLibraryPaths
     {
-        public const string FixedAssetsPath = @"C:\Users\adith\Desktop\CAT\assets\icon-library";
+        public const string SubfolderName = "icon-library";
 
         public static string Root
         {
             get
             {
-                if (Directory.Exists(FixedAssetsPath)) return FixedAssetsPath;
+                string asmDir = Path.GetDirectoryName(typeof(IconLibraryPaths).Assembly.Location) ?? "";
+                string nextToDll = Path.Combine(asmDir, SubfolderName);
+                if (Directory.Exists(nextToDll)) return nextToDll;
 
-                // F5 debug: …\src\CAT\bin\Debug → …\assets\icon-library
                 try
                 {
-                    var asmDir = Path.GetDirectoryName(typeof(IconLibraryPaths).Assembly.Location) ?? "";
-                    var fromBin = Path.GetFullPath(Path.Combine(asmDir, "..", "..", "..", "..", "assets", "icon-library"));
+                    var fromBin = Path.GetFullPath(Path.Combine(asmDir, "..", "..", "..", "..", "assets", SubfolderName));
                     if (Directory.Exists(fromBin)) return fromBin;
                 }
                 catch { }
 
-                return FixedAssetsPath;
+                return nextToDll;
             }
         }
     }

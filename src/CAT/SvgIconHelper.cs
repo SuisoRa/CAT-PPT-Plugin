@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -42,6 +43,55 @@ svg{{max-width:88%;max-height:88%;width:auto;height:auto}}
             string temp = Path.Combine(Path.GetTempPath(), "cat-icon-" + Guid.NewGuid().ToString("N") + ".svg");
             File.WriteAllText(temp, svg, new UTF8Encoding(false));
             return temp;
+        }
+
+        /// <summary>Stroke-only tint for icon library inserts (no fill).</summary>
+        public static string WriteOutlineTintedTempFile(string svgPath, string tintHex)
+        {
+            string svg = ApplyOutlineTint(File.ReadAllText(svgPath), tintHex);
+            string temp = Path.Combine(Path.GetTempPath(), "cat-icon-" + Guid.NewGuid().ToString("N") + ".svg");
+            File.WriteAllText(temp, svg, new UTF8Encoding(false));
+            return temp;
+        }
+
+        public static string ApplyOutlineTint(string svg, string hex)
+        {
+            if (string.IsNullOrEmpty(hex)) return svg;
+            hex = NormalizeHex(hex);
+
+            const string marker = "<!--cat-outline-tint-->";
+            if (!svg.Contains(marker))
+            {
+                int svgTag = svg.IndexOf("<svg", StringComparison.OrdinalIgnoreCase);
+                if (svgTag >= 0)
+                {
+                    int close = svg.IndexOf('>', svgTag);
+                    if (close > 0)
+                    {
+                        svg = svg.Insert(close + 1,
+                            marker + $"<style type='text/css'>*{{fill:none!important;stroke:{hex}!important;color:{hex}!important}}</style>");
+                    }
+                }
+            }
+
+            svg = Regex.Replace(svg,
+                @"(fill\s*=\s*[""'])(?!none|transparent|url)([^""']*)([""'])",
+                "$1none$3",
+                RegexOptions.IgnoreCase);
+            svg = Regex.Replace(svg,
+                @"(stroke\s*=\s*[""'])(?!none|transparent|url)([^""']*)([""'])",
+                "$1" + hex + "$3",
+                RegexOptions.IgnoreCase);
+            svg = Regex.Replace(svg,
+                @"(stroke\s*:\s*)(?!none|transparent)(#[0-9A-Fa-f]{3,8}|rgb\([^)]+\)|[a-zA-Z]+)(\s*[;""'])",
+                "$1" + hex + "$3",
+                RegexOptions.IgnoreCase);
+            svg = Regex.Replace(svg,
+                @"(fill\s*:\s*)(?!none|transparent)(#[0-9A-Fa-f]{3,8}|rgb\([^)]+\)|[a-zA-Z]+)(\s*[;""'])",
+                "$1none$3",
+                RegexOptions.IgnoreCase);
+
+            return svg;
         }
 
         public static string ApplyTint(string svg, string hex)
@@ -101,6 +151,24 @@ svg{{max-width:88%;max-height:88%;width:auto;height:auto}}
                 return themeColors[accent].RGB;
             }
             catch { return 0xC47244; }
+        }
+
+        /// <summary>Parses #RGB or #RRGGBB into a PowerPoint BGR colour. Empty input is not a colour.</summary>
+        public static bool TryParseHexRgb(string text, out int bgr)
+        {
+            bgr = 0;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            text = text.Trim();
+            if (text.StartsWith("#", StringComparison.Ordinal)) text = text.Substring(1);
+            if (text.Length == 3)
+                text = string.Concat(text[0], text[0], text[1], text[1], text[2], text[2]);
+            if (text.Length != 6) return false;
+            if (!int.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int rgb)) return false;
+            int r = (rgb >> 16) & 0xFF;
+            int g = (rgb >> 8) & 0xFF;
+            int b = rgb & 0xFF;
+            bgr = r | (g << 8) | (b << 16);
+            return true;
         }
 
         public static string RgbToHex(int rgb)

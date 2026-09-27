@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Cat.Core;
 using Cat.TableCreator;
+using Cat.TextBlocks;
 using Cat.UI;
 using Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
@@ -26,6 +27,7 @@ namespace Cat
 
         public SelectionOrderTracker SelectionTracker { get; private set; }
         public PositionClipboard PositionClipboard { get; private set; }
+        public SpacingClipboard SpacingClipboard { get; private set; }
         public RibbonController Ribbon { get; private set; }
 
         public PowerPoint.Application App => this.Application;
@@ -37,6 +39,7 @@ namespace Cat
 
             SelectionTracker = new SelectionOrderTracker(this.Application);
             PositionClipboard = new PositionClipboard();
+            SpacingClipboard = new SpacingClipboard();
 
             _dispatcher = new ShortcutDispatcher(this.Application);
             _hook = new KeyboardHook(_dispatcher);
@@ -49,6 +52,7 @@ namespace Cat
         {
             try { AutoFormatToolbar.Close(); } catch { }
             try { TableCreatorWindow.Close(); } catch { }
+            try { TextBlockWindow.Close(); } catch { }
             try { _hook?.Uninstall(); } catch { }
             try { SelectionTracker?.Dispose(); } catch { }
             AddInSettings.Save();

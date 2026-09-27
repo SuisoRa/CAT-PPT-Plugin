@@ -198,6 +198,12 @@ namespace Cat.AutoFormat
                     s.Line.Visible = Office.MsoTriState.msoFalse;
                 }
                 catch { }
+
+                if (_dir == CalloutDirection.Up && ShapeHelpers.HasTextFrame(s))
+                {
+                    Cmd.SetTextFrameMargins(s.TextFrame, Cmd.Margin02CmPt);
+                    Cmd.EnsureTextBoxPlaceholder(s.TextFrame);
+                }
             }
         }
     }
@@ -219,6 +225,12 @@ namespace Cat.AutoFormat
                     s.Line.Visible = Office.MsoTriState.msoFalse;
                 }
                 catch { }
+
+                if (ShapeHelpers.HasTextFrame(s))
+                {
+                    Cmd.SetTextFrameMargins(s.TextFrame, Cmd.Margin02CmPt);
+                    Cmd.EnsureTextBoxPlaceholder(s.TextFrame);
+                }
             }
         }
     }

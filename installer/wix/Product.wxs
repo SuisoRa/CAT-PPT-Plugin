@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <?define ProductName = "CAT PowerPoint add-in" ?>
+  <?define ProductVersion = "1.0.0.0" ?>
+  <?define Manufacturer = "CAT" ?>
+  <?define UpgradeCode = "7C4E9A2B-1D8F-4E6C-9B3A-2F5D8E1C0A94" ?>
+
+  <Product Id="*"
+           Name="$(var.ProductName)"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perUser"
+             Description="$(var.ProductName)"
+             Comments="VSTO add-in for PowerPoint (CAT ribbon tools)" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of CAT is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="ALLUSERS" Value="2" />
+
+    <Feature Id="MainFeature" Title="CAT" Level="1">
+      <ComponentGroupRef Id="CatStagedFiles" />
+      <ComponentRef Id="RegisterScriptsComponent" />
+      <ComponentRef Id="InstallFolderCleanupComponent" />
+    </Feature>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="CATProgramsFolder" Name="Programs">
+          <Directory Id="INSTALLFOLDER" Name="CAT" />
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="RegisterScriptsComponent" Guid="B8E3F1A2-6C4D-4E9F-A1B2-3C4D5E6F7081">
+        <File Id="RegisterCatAddinScript" Source="$(var.InstallerDir)\Register-CatAddin.ps1" />
+        <File Id="UnregisterCatAddinScript" Source="$(var.InstallerDir)\Unregister-CatAddin.ps1" />
+        <RegistryValue Root="HKCU" Key="Software\CAT\Installer\Scripts" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="InstallFolderCleanupComponent" Guid="C1D2E3F4-A5B6-4789-ACDE-F01234567890">
+        <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\CAT\Installer" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <CustomAction Id="RegisterCatAddin"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;Register-CatAddin.ps1&quot; -VstoPath &quot;CAT.vsto&quot;"
+                  Execute="commit"
+                  Return="check"
+                  Impersonate="yes" />
+
+    <CustomAction Id="UnregisterCatAddin"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;Unregister-CatAddin.ps1&quot;"
+                  Execute="commit"
+                  Return="ignore"
+                  Impersonate="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RegisterCatAddin" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="UnregisterCatAddin" Before="RemoveFiles">REMOVE="ALL"</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>

@@ -6,6 +6,7 @@ using WinForms = System.Windows.Forms;
 using Office = Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using Cat.Core;
+using Cat.TextBlocks;
 using Cat.UI;
 
 namespace Cat.Commands
@@ -64,6 +65,45 @@ namespace Cat.Commands
         public static void ForEachSelected(CommandContext ctx, Action<PowerPoint.Shape> action)
         { foreach (var s in ShapeHelpers.ToList(ctx.SelectedShapes)) action(s); }
 
+        /// <summary>Shape selection, or the text box that contains the caret (text-edit / soft selection).</summary>
+        public static List<PowerPoint.Shape> EditableShapes(CommandContext ctx)
+        {
+            var list = new List<PowerPoint.Shape>();
+            if (ctx == null) return list;
+            if (ctx.HasShapeSelection)
+            {
+                list.AddRange(ShapeHelpers.ToList(ctx.SelectedShapes));
+                return list;
+            }
+            if (!ctx.HasTextSelection) return list;
+
+            try
+            {
+                var range = ctx.Selection?.ShapeRange;
+                if (range != null && range.Count > 0)
+                {
+                    list.AddRange(ShapeHelpers.ToList(range));
+                    if (list.Count > 0) return list;
+                }
+            }
+            catch { }
+
+            try
+            {
+                dynamic frame = ctx.SelectedText?.Parent;
+                if (frame != null)
+                {
+                    PowerPoint.Shape shape = frame.Parent as PowerPoint.Shape;
+                    if (shape != null) list.Add(shape);
+                }
+            }
+            catch { }
+            return list;
+        }
+
+        public static void ForEachEditable(CommandContext ctx, Action<PowerPoint.Shape> action)
+        { foreach (var s in EditableShapes(ctx)) action(s); }
+
         public static PowerPoint.Shape Reference(CommandContext ctx)
         { var o = ctx.OrderedSelection(); return o.Count > 0 ? o[0] : null; }
 
@@ -84,10 +124,230 @@ namespace Cat.Commands
                 shapes[i].Select(i == 0 ? Office.MsoTriState.msoTrue : Office.MsoTriState.msoFalse);
         }
 
+        public const string TextBoxPlaceholder = "Text";
+
+        /// <summary>0.2 cm in PowerPoint points.</summary>
+        public const float Margin02CmPt = 0.2f * 72f / 2.54f;
+
+        public static string TextOrPlaceholder(string text) =>
+            string.IsNullOrWhiteSpace(text) ? TextBoxPlaceholder : text;
+
+        public static void EnsureTextBoxPlaceholder(PowerPoint.TextFrame tf)
+        {
+            if (tf == null) return;
+            try
+            {
+                var tr = tf.TextRange;
+                if (string.IsNullOrWhiteSpace(tr.Text)) tr.Text = TextBoxPlaceholder;
+            }
+            catch { }
+        }
+
         public static void ClearTextFrameMargins(PowerPoint.TextFrame tf)
         {
             if (tf == null) return;
             try { tf.MarginLeft = 0f; tf.MarginRight = 0f; tf.MarginTop = 0f; tf.MarginBottom = 0f; } catch { }
+        }
+
+        public static void SetTextFrameMargins(PowerPoint.TextFrame tf, float pt)
+        {
+            if (tf == null) return;
+            try { tf.MarginLeft = pt; tf.MarginRight = pt; tf.MarginTop = pt; tf.MarginBottom = pt; } catch { }
+        }
+
+        public static void SetSingleLineSpacing(PowerPoint.TextRange tr)
+        {
+            if (tr == null) return;
+            try
+            {
+                int n = tr.Paragraphs().Count;
+                for (int i = 1; i <= n; i++)
+                {
+                    var pf = tr.Paragraphs(i).ParagraphFormat;
+                    pf.LineRuleWithin = Office.MsoTriState.msoTrue;
+                    pf.SpaceWithin = 1f;
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>One pass: body font, plain weight, Text 1, no highlight; keeps each fragment's point size.</summary>
+        public static void FixTextRangeFormatting(PowerPoint.TextRange tr, PowerPoint.Slide slide)
+        {
+            if (tr == null || slide == null) return;
+            string bodyFont = TextBlockThemeHelper.TryThemeMinorFont(slide);
+
+            int len = 0;
+            try { len = tr.Length; } catch { }
+
+            bool anyRun = false;
+            for (int i = 1; i <= 500; i++)
+            {
+                try
+                {
+                    var run = tr.Runs(i);
+                    if (run == null || run.Length < 1) break;
+                    NormalizeTextRun(run, bodyFont, slide);
+                    anyRun = true;
+                }
+                catch { break; }
+            }
+
+            if (!anyRun && len > 0)
+                NormalizeTextRun(tr, bodyFont, slide);
+
+            if (len > 0 && len <= 10000)
+            {
+                for (int i = 1; i <= len; i++)
+                {
+                    try
+                    {
+                        var ch = tr.Characters(i, 1);
+                        NormalizeTextRun(ch, bodyFont, slide);
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        public static void FixTextBoxShape(PowerPoint.Shape shape, PowerPoint.Slide slide)
+        {
+            if (shape == null || slide == null || !ShapeHelpers.HasTextFrame(shape)) return;
+            try
+            {
+                shape.Fill.Visible = Office.MsoTriState.msoFalse;
+                shape.Line.Visible = Office.MsoTriState.msoFalse;
+                shape.Shadow.Visible = Office.MsoTriState.msoFalse;
+                var tf = shape.TextFrame;
+                Cmd.ClearTextFrameMargins(tf);
+                try { tf.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorTop; } catch { }
+                ShapeHelpers.SetAutoSize(shape, PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText);
+                var tr = tf.TextRange;
+                Cmd.SetSingleLineSpacing(tr);
+                FixTextRangeFormatting(tr, slide);
+                ClearTextHighlights(shape);
+            }
+            catch { }
+        }
+
+        private static void NormalizeTextRun(PowerPoint.TextRange run, string bodyFont, PowerPoint.Slide slide)
+        {
+            if (run == null) return;
+            float size;
+            try { size = run.Font.Size; }
+            catch { size = 12f; }
+            if (size < 1f) size = 12f;
+
+            var f = run.Font;
+            try
+            {
+                f.Bold = Office.MsoTriState.msoFalse;
+                f.Italic = Office.MsoTriState.msoFalse;
+                f.Underline = Office.MsoTriState.msoFalse;
+                f.Emboss = Office.MsoTriState.msoFalse;
+                f.Shadow = Office.MsoTriState.msoFalse;
+                f.Superscript = Office.MsoTriState.msoFalse;
+                f.Subscript = Office.MsoTriState.msoFalse;
+                try { f.BaselineOffset = 0f; } catch { }
+                f.Name = bodyFont;
+                f.Size = size;
+            }
+            catch { }
+
+            try
+            {
+                dynamic df = f;
+                try { df.StrikeThrough = Office.MsoTriState.msoFalse; } catch { }
+                try { df.DoubleStrikeThrough = Office.MsoTriState.msoFalse; } catch { }
+                try { df.AllCaps = Office.MsoTriState.msoFalse; } catch { }
+                try { df.SmallCaps = Office.MsoTriState.msoFalse; } catch { }
+                try { df.Spacing = 0f; } catch { }
+                try { df.CharacterSpacing = 0f; } catch { }
+                try { df.Kernings = Office.MsoTriState.msoFalse; } catch { }
+                try { df.Highlight = Office.MsoTriState.msoFalse; } catch { }
+            }
+            catch { }
+
+            TextBlockThemeHelper.ApplyText1Color(run, slide);
+            ClearRunHighlight(run);
+        }
+
+        private static void ClearRunHighlight(PowerPoint.TextRange run)
+        {
+            if (run == null) return;
+            try
+            {
+                dynamic f = run.Font;
+                try { f.Highlight = Office.MsoTriState.msoFalse; } catch { }
+                try { f.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
+            }
+            catch { }
+        }
+
+        private static void ClearTextHighlights(PowerPoint.Shape shape)
+        {
+            try
+            {
+                dynamic tr2 = shape.TextFrame2.TextRange;
+                int len = (int)tr2.Length;
+                if (len < 1) return;
+                int max = Math.Min(len, 10000);
+                for (int i = 1; i <= max; i++)
+                {
+                    try
+                    {
+                        dynamic ch = tr2.Characters[i, 1];
+                        dynamic font = ch.Font;
+                        try { font.HighlightColor.ObjectThemeColor = Office.MsoThemeColorIndex.msoNotThemeColor; } catch { }
+                        try { font.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        public static void ReduceTextFrameMargins(PowerPoint.TextFrame tf, float deltaPt)
+        {
+            if (tf == null || deltaPt <= 0f) return;
+            try { tf.MarginLeft = Math.Max(0f, tf.MarginLeft - deltaPt); } catch { }
+            try { tf.MarginRight = Math.Max(0f, tf.MarginRight - deltaPt); } catch { }
+            try { tf.MarginTop = Math.Max(0f, tf.MarginTop - deltaPt); } catch { }
+            try { tf.MarginBottom = Math.Max(0f, tf.MarginBottom - deltaPt); } catch { }
+        }
+
+        /// <summary>Current within-paragraph spacing as a line multiple, one value per indent level 1–5.</summary>
+        public static double[] ReadLineSpacingInLines(PowerPoint.TextRange tr)
+        {
+            var values = new double[] { 1, 1, 1, 1, 1 };
+            if (tr == null) return values;
+            var seen = new bool[5];
+            try
+            {
+                int n = tr.Paragraphs().Count;
+                for (int i = 1; i <= n; i++)
+                {
+                    var p = tr.Paragraphs(i);
+                    int level = Clamp(p.IndentLevel, 1, 5) - 1;
+                    if (seen[level]) continue;
+                    var pf = p.ParagraphFormat;
+                    float space = 1f;
+                    bool inLines = true;
+                    try { space = pf.SpaceWithin; } catch { }
+                    try { inLines = pf.LineRuleWithin != Office.MsoTriState.msoFalse; } catch { }
+                    if (!inLines)
+                    {
+                        float font = 12f;
+                        try { if (p.Font.Size > 0) font = p.Font.Size; } catch { }
+                        space = font > 0 ? space / font : 1f;
+                    }
+                    if (space < 0 || float.IsNaN(space) || float.IsInfinity(space)) space = 1f;
+                    values[level] = Math.Round(space, 2);
+                    seen[level] = true;
+                }
+            }
+            catch { }
+            return values;
         }
     }
 
@@ -393,18 +653,31 @@ namespace Cat.Commands
           Cmd.ForEachSelected(c, s => { if (s.Id != r.Id) { s.LockAspectRatio = Office.MsoTriState.msoFalse; s.Width = w; s.Height = h; } }); }
     }
 
-    public sealed class DoNotResizeCommand : ShapeCommandBase
-    { public override string Name => "Do Not Resize";
-      public override void Execute(CommandContext c) => Cmd.ForEachSelected(c, s => ShapeHelpers.SetAutoSize(s, PowerPoint.PpAutoSize.ppAutoSizeNone)); }
-    public sealed class ResizeCommand : ShapeCommandBase
-    { public override string Name => "Resize";
-      public override void Execute(CommandContext c) => Cmd.ForEachSelected(c, s => ShapeHelpers.SetAutoSize(s, PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText)); }
+    public sealed class DoNotResizeCommand : ICommand
+    {
+        public string Name => "Do Not Resize";
+        public bool CanExecute(CommandContext c) => Cmd.EditableShapes(c).Count > 0;
+        public void Execute(CommandContext c) => Cmd.ForEachEditable(c, s => ShapeHelpers.SetAutoSize(s, PowerPoint.PpAutoSize.ppAutoSizeNone));
+    }
+    public sealed class ResizeCommand : ICommand
+    {
+        public string Name => "Resize";
+        public bool CanExecute(CommandContext c) => Cmd.EditableShapes(c).Count > 0;
+        public void Execute(CommandContext c) => Cmd.ForEachEditable(c, s => ShapeHelpers.SetAutoSize(s, PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText));
+    }
 
     public sealed class FitToWindowCommand : ICommand
     {
-        public string Name => "Fit to Window (100%)";
+        public string Name => "Fit slide to window";
         public bool CanExecute(CommandContext c) => c.ActiveWindow != null;
-        public void Execute(CommandContext c) { try { c.ActiveWindow.View.Zoom = 100; } catch { } }
+        public void Execute(CommandContext c)
+        {
+            try { ((dynamic)c.ActiveWindow.View).ZoomToFit = Office.MsoTriState.msoTrue; }
+            catch
+            {
+                try { c.App.CommandBars.ExecuteMso("ZoomFitToWindow"); } catch { }
+            }
+        }
     }
 
     public sealed class ResetFixedElementsCommand : ICommand
@@ -459,6 +732,72 @@ namespace Cat.Commands
         }
     }
 
+    public sealed class CopySpacingCommand : ICommand
+    {
+        public string Name => "Copy spacing";
+        public bool CanExecute(CommandContext c) => c.HasShapeSelection && c.SelectedShapes.Count == 2;
+        public void Execute(CommandContext c)
+        {
+            var shapes = ShapeHelpers.ToList(c.SelectedShapes);
+            if (shapes.Count != 2)
+            {
+                Notifier.Info("Select exactly two objects to copy the spacing between them.");
+                return;
+            }
+            ThisAddIn.Instance.SpacingClipboard.Set(HorizontalGap(shapes[0], shapes[1]), VerticalGap(shapes[0], shapes[1]));
+        }
+
+        internal static float HorizontalGap(PowerPoint.Shape a, PowerPoint.Shape b)
+        {
+            var left = a.Left <= b.Left ? a : b;
+            var right = ReferenceEquals(left, a) ? b : a;
+            return right.Left - (left.Left + left.Width);
+        }
+
+        internal static float VerticalGap(PowerPoint.Shape a, PowerPoint.Shape b)
+        {
+            var top = a.Top <= b.Top ? a : b;
+            var bottom = ReferenceEquals(top, a) ? b : a;
+            return bottom.Top - (top.Top + top.Height);
+        }
+    }
+
+    public sealed class PasteVerticalSpacingCommand : ICommand
+    {
+        public string Name => "Paste vertical spacing";
+        public bool CanExecute(CommandContext c) => c.HasShapeSelection && c.SelectedShapes.Count >= 2;
+        public void Execute(CommandContext c)
+        {
+            var clip = ThisAddIn.Instance.SpacingClipboard;
+            if (!clip.HasData)
+            {
+                Notifier.Info("Copy spacing from two objects first.");
+                return;
+            }
+            var ordered = ShapeHelpers.ToList(c.SelectedShapes).OrderBy(s => s.Top).ThenBy(s => s.Left).ToList();
+            for (int i = 1; i < ordered.Count; i++)
+                ordered[i].Top = ordered[i - 1].Top + ordered[i - 1].Height + clip.Vertical;
+        }
+    }
+
+    public sealed class PasteHorizontalSpacingCommand : ICommand
+    {
+        public string Name => "Paste horizontal spacing";
+        public bool CanExecute(CommandContext c) => c.HasShapeSelection && c.SelectedShapes.Count >= 2;
+        public void Execute(CommandContext c)
+        {
+            var clip = ThisAddIn.Instance.SpacingClipboard;
+            if (!clip.HasData)
+            {
+                Notifier.Info("Copy spacing from two objects first.");
+                return;
+            }
+            var ordered = ShapeHelpers.ToList(c.SelectedShapes).OrderBy(s => s.Left).ThenBy(s => s.Top).ToList();
+            for (int i = 1; i < ordered.Count; i++)
+                ordered[i].Left = ordered[i - 1].Left + ordered[i - 1].Width + clip.Horizontal;
+        }
+    }
+
     internal static class InsertConst
     {
         public const int StickyYellow = 0x00A8F2FF;
@@ -489,6 +828,7 @@ namespace Cat.Commands
                 dynamic fonts = slide.Design.SlideMaster.Theme.ThemeFontScheme.MinorFont;
                 var tf = tb.TextFrame;
                 var tr = tf.TextRange;
+                tr.Text = Cmd.TextBoxPlaceholder;
                 tr.Font.Name = fonts[1].Name;
                 tr.Font.Size = 12f;
                 tb.Line.Visible = Office.MsoTriState.msoFalse;
@@ -531,7 +871,9 @@ namespace Cat.Commands
                 if (ShapeHelpers.HasTextFrame(s))
                 {
                     var tr = s.TextFrame.TextRange;
+                    tr.Text = Cmd.TextBoxPlaceholder;
                     tr.Font.Size = 12f;
+                    tr.Font.Color.RGB = 0x000000;
                 }
             }
             catch { }
@@ -552,7 +894,7 @@ namespace Cat.Commands
             else
             {
                 var tb = c.ActiveSlide.Shapes.AddTextbox(Office.MsoTextOrientation.msoTextOrientationHorizontal, 60, 60, 300, 60);
-                tb.TextFrame.TextRange.Text = text; tb.Select();
+                tb.TextFrame.TextRange.Text = Cmd.TextOrPlaceholder(text); tb.Select();
             }
         }
     }
@@ -601,45 +943,18 @@ namespace Cat.Commands
         }
     }
 
-    /// <summary>Strip box chrome; keep bullets/bold; text colour → theme Text 1.</summary>
+    /// <summary>Strip box chrome; body font per run (sizes kept); plain text; Text 1; no highlight.</summary>
     public sealed class FixTextBoxCommand : ICommand
     {
         public string Name => "Fix Text Box";
-        public bool CanExecute(CommandContext c) => c.HasShapeSelection;
+        public bool CanExecute(CommandContext c) =>
+            Cmd.EditableShapes(c).Any(ShapeHelpers.HasTextFrame);
+
         public void Execute(CommandContext c)
         {
             var slide = c.ActiveSlide;
-            Cmd.ForEachSelected(c, s =>
-            {
-                if (!ShapeHelpers.HasTextFrame(s)) return;
-                try
-                {
-                    s.Fill.Visible = Office.MsoTriState.msoFalse;
-                    s.Line.Visible = Office.MsoTriState.msoFalse;
-                    s.Shadow.Visible = Office.MsoTriState.msoFalse;
-                    var tf = s.TextFrame;
-                    Cmd.ClearTextFrameMargins(tf);
-                    try { tf.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorTop; } catch { }
-                    ShapeHelpers.SetAutoSize(s, PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText);
-                    dynamic themeColors = slide.ThemeColorScheme;
-                    try
-                    {
-                        var fc = s.TextFrame.TextRange.Font.Color;
-                        fc.ObjectThemeColor = Office.MsoThemeColorIndex.msoThemeColorText1;
-                        fc.TintAndShade = 0f;
-                    }
-                    catch
-                    {
-                        try
-                        {
-                            int text1 = themeColors[Office.MsoThemeColorSchemeIndex.msoThemeDark1].RGB;
-                            s.TextFrame.TextRange.Font.Color.RGB = text1;
-                        }
-                        catch { }
-                    }
-                }
-                catch { }
-            });
+            if (slide == null) return;
+            Cmd.ForEachEditable(c, s => Cmd.FixTextBoxShape(s, slide));
         }
     }
 
@@ -672,30 +987,65 @@ namespace Cat.Commands
     }
 
     public sealed class WordWrapCommand : ICommand
-    { public string Name => "Word Wrap";
-      public bool CanExecute(CommandContext c) => c.HasShapeSelection;
-      public void Execute(CommandContext c) => Cmd.ForEachSelected(c, s => ShapeHelpers.SetWordWrap(s, true)); }
+    {
+        public string Name => "Word Wrap";
+        public bool CanExecute(CommandContext c) => Cmd.EditableShapes(c).Count > 0;
+        public void Execute(CommandContext c) => Cmd.ForEachEditable(c, s => ShapeHelpers.SetWordWrap(s, true));
+    }
     public sealed class DoNotWordWrapCommand : ICommand
-    { public string Name => "Do Not Word Wrap";
-      public bool CanExecute(CommandContext c) => c.HasShapeSelection;
-      public void Execute(CommandContext c) => Cmd.ForEachSelected(c, s => ShapeHelpers.SetWordWrap(s, false)); }
+    {
+        public string Name => "Do Not Word Wrap";
+        public bool CanExecute(CommandContext c) => Cmd.EditableShapes(c).Count > 0;
+        public void Execute(CommandContext c) => Cmd.ForEachEditable(c, s => ShapeHelpers.SetWordWrap(s, false));
+    }
+
+    public sealed class ClearSelectedTextCommand : ICommand
+    {
+        public string Name => "Clear text in selection";
+        public bool CanExecute(CommandContext c) => Cmd.EditableShapes(c).Any(ShapeHelpers.HasTextFrame);
+        public void Execute(CommandContext c)
+        {
+            Cmd.ForEachEditable(c, s =>
+            {
+                if (!ShapeHelpers.HasTextFrame(s)) return;
+                try { s.TextFrame.TextRange.Text = ""; } catch { }
+            });
+        }
+    }
 
     public sealed class ListLineSpacingCommand : ICommand
     {
         public string Name => "List Line Spacing";
-        public bool CanExecute(CommandContext c) => Cmd.TargetText(c) != null;
+        public bool CanExecute(CommandContext c) =>
+            Cmd.EditableShapes(c).Any(ShapeHelpers.HasTextFrame) || Cmd.TargetText(c) != null;
+
         public void Execute(CommandContext c)
         {
-            var tr = Cmd.TargetText(c);
-            var r = Dialogs.ShowLineSpacing();
+            var targets = Cmd.EditableShapes(c).Where(ShapeHelpers.HasTextFrame).ToList();
+            PowerPoint.TextRange sample = targets.Count > 0
+                ? targets[0].TextFrame.TextRange
+                : Cmd.TargetText(c);
+            if (sample == null) return;
+
+            var r = Dialogs.ShowLineSpacing(Cmd.ReadLineSpacingInLines(sample));
             if (!r.Ok) return;
+
+            if (targets.Count == 0)
+                Apply(sample, r);
+            else
+                foreach (var s in targets)
+                    try { Apply(s.TextFrame.TextRange, r); } catch { }
+        }
+
+        private static void Apply(PowerPoint.TextRange tr, LineSpacingResult r)
+        {
             for (int i = 1; i <= tr.Paragraphs().Count; i++)
             {
-                var p = tr.Paragraphs(i); var pf = p.ParagraphFormat;
+                var p = tr.Paragraphs(i);
+                var pf = p.ParagraphFormat;
                 int level = Cmd.Clamp(p.IndentLevel, 1, 5);
-                if (r.Auto) { pf.LineRuleWithin = Office.MsoTriState.msoTrue; pf.SpaceWithin = 1f; continue; }
-                pf.LineRuleWithin = r.InLines ? Office.MsoTriState.msoTrue : Office.MsoTriState.msoFalse;
-                pf.SpaceWithin = (float)r.Values[level - 1];
+                pf.LineRuleWithin = Office.MsoTriState.msoTrue;
+                pf.SpaceWithin = r.Auto ? 1f : (float)r.Values[level - 1];
             }
         }
     }
@@ -771,7 +1121,7 @@ namespace Cat.Commands
                 PowerPoint.Shape box = keep ? source.Duplicate()[1]
                     : slide.Shapes.AddTextbox(Office.MsoTextOrientation.msoTextOrientationHorizontal, source.Left, top, source.Width, 20);
                 box.Left = source.Left; box.Top = top;
-                box.TextFrame.TextRange.Text = text;
+                box.TextFrame.TextRange.Text = Cmd.TextOrPlaceholder(text);
                 box.TextFrame.AutoSize = PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText;
                 top = box.Top + box.Height + 6f;
             }
@@ -788,7 +1138,7 @@ namespace Cat.Commands
 
             PowerPoint.Shape target = keep ? first
                 : c.ActiveSlide.Shapes.AddTextbox(Office.MsoTextOrientation.msoTextOrientationHorizontal, first.Left, first.Top, first.Width, first.Height);
-            target.TextFrame.TextRange.Text = sb.ToString();
+            target.TextFrame.TextRange.Text = Cmd.TextOrPlaceholder(sb.ToString());
             target.TextFrame.AutoSize = PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText;
 
             foreach (var s in ordered) { if (keep && s == first) continue; s.Delete(); }
@@ -1020,9 +1370,9 @@ namespace Cat.Commands
             if (!TryGetSingleLine(c, out var line)) return;
             try
             {
-                float top = line.Top;
-                line.Height = 0f;
-                line.Top = top;
+                float left = line.Left;
+                line.Width = 0f;
+                line.Left = left;
             }
             catch (Exception ex) { Notifier.Error(ex.Message); }
         }
@@ -1099,9 +1449,9 @@ namespace Cat.Commands
 
             try
             {
-                float left = line.Left;
-                line.Width = 0f;
-                line.Left = left;
+                float top = line.Top;
+                line.Height = 0f;
+                line.Top = top;
             }
             catch (Exception ex) { Notifier.Error(ex.Message); }
         }

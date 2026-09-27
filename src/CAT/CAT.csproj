@@ -91,6 +91,16 @@
     <Compile Include="TableCreator\TableCreatorBuilder.cs" />
     <Compile Include="TableCreator\TableCreatorService.cs" />
     <Compile Include="TableCreator\TableCreatorWindow.cs" />
+    <Compile Include="TextBlock\ActionItemTextBlockSpec.cs" />
+    <Compile Include="TextBlock\ActionItemTextBlockService.cs" />
+    <Compile Include="TextBlock\ChevronTextBlockSpec.cs" />
+    <Compile Include="TextBlock\ChevronTextBlockService.cs" />
+    <Compile Include="TextBlock\TextBlockThemeHelper.cs" />
+    <Compile Include="TextBlock\ChevronToggleCommand.cs" />
+    <Compile Include="TextBlock\TextBlockPreviewHelper.cs" />
+    <Compile Include="TextBlock\TextBlockWindow.cs" />
+    <Compile Include="Tools\FontColorAlternatorCommand.cs" />
+    <Compile Include="Tools\ReduceTextMarginCommand.cs" />
     <Compile Include="IconLibraryPaths.cs" />
     <Compile Include="SvgPreviewQueue.cs" />
     <Compile Include="SvgIconHelper.cs" />
@@ -108,8 +118,23 @@
     <EmbeddedResource Include="..\..\assets\icons\cat*.png">
       <Link>icons\%(Filename)%(Extension)</Link>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\text-block\chevron-preview.png">
+      <Link>text-block\chevron-preview.png</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\text-block\action-item-preview.png">
+      <Link>text-block\action-item-preview.png</Link>
+    </EmbeddedResource>
+    <Content Include="..\..\assets\text-block\chevron-preview.png">
+      <Link>text-block\chevron-preview.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\assets\text-block\action-item-preview.png">
+      <Link>text-block\action-item-preview.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Tools\HomeTab.ribbon.xml" />
     <None Include="app.config" />
     <None Include="ThisAddIn.Designer.xml">
       <DependentUpon>ThisAddIn.cs</DependentUpon>

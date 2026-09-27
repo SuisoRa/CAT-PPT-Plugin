@@ -12,10 +12,22 @@ Windows VSTO add-in for classic desktop PowerPoint (365 / 2021 / 2019 / 2016). T
 
 ## Build and install
 
+### Developer (local)
+
 1. Open `src/CAT/CAT.sln` in Visual Studio.
 2. Build **Release** (or F5 for Debug).
 3. Register the add-in: run `installer/install-addin.ps1`, or set `Manifest` in `installer/register-addin.reg` to your `CAT.vsto` path and merge the reg file.
 4. Restart PowerPoint.
+
+### WiX package (new PC / shared rollout)
+
+Per-user installer with offline **.NET 4.8** and **VSTO Runtime** prerequisites. See **`installer/wix/README.md`**.
+
+1. Add prerequisite EXEs to `installer/prereqs/` (see `installer/prereqs/README.md`).
+2. Run `installer/build-installer.ps1` on a machine with Visual Studio + WiX Toolset v3.14.
+3. Distribute `installer/output/CAT-Setup.exe`.
+
+Installed location: `%LocalAppData%\Programs\CAT\` — update **`icon-library\`** SVGs there anytime without reinstalling.
 
 Tool icons load from PNGs in `assets/icons` (embedded in `CAT.dll` on build). Names must match control ids, e.g. `catTableCreator.png`.
 
@@ -59,8 +71,8 @@ Stacked in one column:
 | Control id | Action |
 |---|---|
 | `catAlignByFirst` | When checked, align shortcuts use **first-selected** shape as anchor |
-| `catMakeVertical` | Line/connector: height 0 pt, top of bounds fixed |
-| `catMakeHorizontal` | Line/connector: width 0 pt, left of bounds fixed |
+| `catMakeVertical` | Line/connector: width 0 pt, left of bounds fixed |
+| `catMakeHorizontal` | Line/connector: height 0 pt, top of bounds fixed |
 
 ### Select similar (ribbon only)
 | Control id | Action |
@@ -105,7 +117,9 @@ Stacked in one column:
 | `catWrap` | Ctrl+7 | Word wrap on |
 | `catNoWrap` | Ctrl+Shift+7 | Word wrap off |
 | `catLineSpacing` | Ctrl+Shift+L | List line spacing |
-| `catFixTextBox` | — | No fill/outline; margins 0; text top-aligned; theme Text 1 |
+| `catFixTextBox` | — | No fill/outline; margins 0; body font (sizes kept); plain text; Text 1; clears highlight; works with caret in box |
+| `catFontAlt` | Home → CAT tools | Cycle font colour Text 1 → Text 2 → white (icon `assets/icons/catFontAlt.png`) |
+| `catReduceMargin` | Home → CAT tools | −1 pt text box margins per click (icon `assets/icons/catReduceMargin.png`) |
 
 ### Reset fixed
 | Control id | Shortcut | Action |
