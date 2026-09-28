@@ -25,7 +25,9 @@ Per-user installer with offline **.NET 4.8** and **VSTO Runtime** prerequisites.
 
 1. Add prerequisite EXEs to `installer/prereqs/` (see `installer/prereqs/README.md`).
 2. Run `installer/build-installer.ps1` on a machine with Visual Studio + WiX Toolset v3.14.
-3. Distribute `installer/output/CAT-Setup.exe`.
+3. Distribute **`CAT-Setup.exe`** from [GitHub Releases](https://github.com/SuisoRa/CAT-PPT-Plugin/releases), or build it locally (see below).
+
+**Installer source in git:** `installer/wix/`, `installer/build-installer.ps1`, and registration scripts. Built `.exe` / `.msi` are not in the repo (size limits); see `installer/output/README.md`.
 
 Installed location: `%LocalAppData%\Programs\CAT\` — update **`icon-library\`** SVGs there anytime without reinstalling.
 
