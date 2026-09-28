@@ -14,6 +14,7 @@ Thumbs.db
 Desktop.ini
 
 installer/staging/
-installer/output/
+installer/output/*
+!installer/output/README.md
 installer/wix/_build/
 installer/prereqs/*.exe
