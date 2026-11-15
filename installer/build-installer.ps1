@@ -9,6 +9,31 @@ $output = Join-Path $PSScriptRoot "output"
 $prereqs = Join-Path $PSScriptRoot "prereqs"
 $release = Join-Path $root "src\CAT\bin\Release"
 
+function Get-SignTool {
+    $kits = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+    if (Test-Path $kits) {
+        $found = Get-ChildItem $kits -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\x64\\signtool.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+        if ($found) { return $found.FullName }
+    }
+    return $null
+}
+
+function Sign-CatPackage([string]$path) {
+    $tool = Get-SignTool
+    if (-not $tool) { throw "signtool.exe was not found. Install the Windows SDK signing tools." }
+    $cert = Get-ChildItem Cert:\CurrentUser\My |
+        Where-Object { $_.Subject -eq "CN=Adithya Padmanabhan" -and $_.HasPrivateKey } |
+        Sort-Object NotAfter -Descending |
+        Select-Object -First 1
+    if (-not $cert) { throw "Development certificate CN=Adithya Padmanabhan was not found." }
+    Write-Host "Signing $path"
+    & $tool sign /fd SHA256 /sha1 $cert.Thumbprint /tr http://timestamp.digicert.com /td SHA256 $path
+    if ($LASTEXITCODE -ne 0) { throw "signtool failed for $path" }
+}
+
 function Find-Tool($names, $searchPaths) {
     foreach ($n in $names) {
         $c = Get-Command $n -ErrorAction SilentlyContinue
@@ -39,7 +64,10 @@ $vsto = Join-Path $prereqs "vstor_redist.exe"
 if (-not (Test-Path $ndp)) { throw "Missing $ndp - see installer/prereqs/README.md" }
 if (-not (Test-Path $vsto)) { throw "Missing $vsto - see installer/prereqs/README.md" }
 
-Write-Host "Building CAT (Release, signed manifest if cert present)..."
+Write-Host "Checking development signing certificate..."
+& (Join-Path $PSScriptRoot "ensure-dev-certificate.ps1")
+
+Write-Host "Building CAT (Release, signed VSTO manifests)..."
 & $msbuild (Join-Path $root "src\CAT\CAT.csproj") /t:Rebuild /p:Configuration=Release /v:minimal
 if ($LASTEXITCODE -ne 0) { throw "CAT Release build failed." }
 if (-not (Test-Path (Join-Path $release "CAT.vsto"))) { throw "CAT.vsto not found in $release - VSTO publish output missing." }
@@ -80,6 +108,7 @@ if ($LASTEXITCODE -ne 0) { throw "candle (MSI) failed." }
 $msi = Join-Path $output "CAT.msi"
 & $light @ext -sice:ICE38 -sice:ICE64 -out $msi (Join-Path $wxsOut "Product.wixobj") (Join-Path $wxsOut "StagedFiles.wixobj")
 if ($LASTEXITCODE -ne 0) { throw "light (MSI) failed." }
+Sign-CatPackage $msi
 
 $bundleExt = @("-ext", "WixUtilExtension", "-ext", "WixBalExtension")
 Write-Host "Compiling bootstrapper..."
@@ -89,6 +118,7 @@ if ($LASTEXITCODE -ne 0) { throw "candle (Bundle) failed." }
 $setup = Join-Path $output "CAT-Setup.exe"
 & $light @bundleExt -out $setup (Join-Path $wxsOut "Bundle.wixobj")
 if ($LASTEXITCODE -ne 0) { throw "light (Bundle) failed." }
+Sign-CatPackage $setup
 
 Write-Host ""
 Write-Host "Done."

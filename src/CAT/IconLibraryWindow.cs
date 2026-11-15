@@ -137,7 +137,7 @@ namespace Cat.UI
                 {
                     iconGrid.Children.Add(new TextBlock
                     {
-                        Text = "No icons found.",
+                        Text = "No icons found in " + IconLibraryPaths.Root,
                         Margin = new Thickness(8),
                         Foreground = Brushes.Gray,
                         TextWrapping = TextWrapping.Wrap,

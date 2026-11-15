@@ -3,11 +3,11 @@
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
-  <?define ProductVersion = "1.0.0.0" ?>
+  <?define ProductVersion = "1.1.0.0" ?>
 
   <Bundle Name="CAT PowerPoint add-in"
           Version="$(var.ProductVersion)"
-          Manufacturer="CAT"
+          Manufacturer="Adithya Padmanabhan"
           UpgradeCode="8D5F0B3C-2E9A-4F7D-AC4B-3E6F9D2C1B05">
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense">

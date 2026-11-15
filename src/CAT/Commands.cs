@@ -5,7 +5,9 @@ using System.Text;
 using WinForms = System.Windows.Forms;
 using Office = Microsoft.Office.Core;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using Cat.AutoFormat;
 using Cat.Core;
+using Cat.TableCreator;
 using Cat.TextBlocks;
 using Cat.UI;
 
@@ -36,14 +38,53 @@ namespace Cat.Commands
         {
             get
             {
-                var s = Selection;
-                try { return s != null && s.Type == PowerPoint.PpSelectionType.ppSelectionShapes && s.ShapeRange.Count > 0; }
-                catch { return false; }
+                try
+                {
+                    var range = SelectedShapes;
+                    if (range != null && range.Count > 0) return true;
+                }
+                catch { }
+                return TextEditShape() != null;
             }
         }
 
         public PowerPoint.ShapeRange SelectedShapes
-        { get { try { return Selection?.ShapeRange; } catch { return null; } } }
+        {
+            get
+            {
+                try
+                {
+                    var s = Selection;
+                    if (s == null) return null;
+                    var t = s.Type;
+                    if (t != PowerPoint.PpSelectionType.ppSelectionShapes
+                        && t != PowerPoint.PpSelectionType.ppSelectionText)
+                        return null;
+                    var range = s.ShapeRange;
+                    if (range != null && range.Count > 0) return range;
+                }
+                catch { }
+                return null;
+            }
+        }
+
+        /// <summary>Shape that contains the caret when PowerPoint reports a text selection.</summary>
+        public PowerPoint.Shape TextEditShape()
+        {
+            try
+            {
+                if (!HasTextSelection) return null;
+                try
+                {
+                    var range = Selection?.ShapeRange;
+                    if (range != null && range.Count > 0) return range[1];
+                }
+                catch { }
+                dynamic frame = SelectedText?.Parent;
+                return frame?.Parent as PowerPoint.Shape;
+            }
+            catch { return null; }
+        }
 
         public bool HasTextSelection
         { get { try { return Selection != null && Selection.Type == PowerPoint.PpSelectionType.ppSelectionText; } catch { return false; } } }
@@ -63,16 +104,26 @@ namespace Cat.Commands
         public const float Pt = ShapeHelpers.PointsPerInch;
 
         public static void ForEachSelected(CommandContext ctx, Action<PowerPoint.Shape> action)
-        { foreach (var s in ShapeHelpers.ToList(ctx.SelectedShapes)) action(s); }
+        {
+            var shapes = ShapeHelpers.ToList(ctx?.SelectedShapes);
+            if (shapes.Count == 0) shapes = EditableShapes(ctx);
+            foreach (var s in shapes) action(s);
+        }
 
         /// <summary>Shape selection, or the text box that contains the caret (text-edit / soft selection).</summary>
         public static List<PowerPoint.Shape> EditableShapes(CommandContext ctx)
         {
             var list = new List<PowerPoint.Shape>();
             if (ctx == null) return list;
-            if (ctx.HasShapeSelection)
+            if (ctx.HasShapeSelection && ctx.SelectedShapes != null)
             {
                 list.AddRange(ShapeHelpers.ToList(ctx.SelectedShapes));
+                if (list.Count > 0) return list;
+            }
+            var editing = ctx.TextEditShape();
+            if (editing != null)
+            {
+                list.Add(editing);
                 return list;
             }
             if (!ctx.HasTextSelection) return list;
@@ -157,6 +208,11 @@ namespace Cat.Commands
 
         public static void SetSingleLineSpacing(PowerPoint.TextRange tr)
         {
+            SetMultipleLineSpacing(tr, 1f);
+        }
+
+        public static void SetMultipleLineSpacing(PowerPoint.TextRange tr, float multiple)
+        {
             if (tr == null) return;
             try
             {
@@ -165,17 +221,17 @@ namespace Cat.Commands
                 {
                     var pf = tr.Paragraphs(i).ParagraphFormat;
                     pf.LineRuleWithin = Office.MsoTriState.msoTrue;
-                    pf.SpaceWithin = 1f;
+                    pf.SpaceWithin = multiple;
                 }
             }
             catch { }
         }
 
-        /// <summary>One pass: body font, plain weight, Text 1, no highlight; keeps each fragment's point size.</summary>
-        public static void FixTextRangeFormatting(PowerPoint.TextRange tr, PowerPoint.Slide slide)
+        /// <summary>One pass: body font, plain weight, Text 1 (or black when requested), no highlight; keeps each fragment's point size.</summary>
+        public static void FixTextRangeFormatting(PowerPoint.TextRange tr, PowerPoint.Slide slide, bool blackFont = false, bool keepFont = false, bool keepColor = false)
         {
             if (tr == null || slide == null) return;
-            string bodyFont = TextBlockThemeHelper.TryThemeMinorFont(slide);
+            string bodyFont = keepFont ? null : TextBlockThemeHelper.TryThemeMinorFont(slide);
 
             int len = 0;
             try { len = tr.Length; } catch { }
@@ -187,27 +243,14 @@ namespace Cat.Commands
                 {
                     var run = tr.Runs(i);
                     if (run == null || run.Length < 1) break;
-                    NormalizeTextRun(run, bodyFont, slide);
+                    NormalizeTextRun(run, bodyFont, slide, blackFont, keepColor);
                     anyRun = true;
                 }
                 catch { break; }
             }
 
             if (!anyRun && len > 0)
-                NormalizeTextRun(tr, bodyFont, slide);
-
-            if (len > 0 && len <= 10000)
-            {
-                for (int i = 1; i <= len; i++)
-                {
-                    try
-                    {
-                        var ch = tr.Characters(i, 1);
-                        NormalizeTextRun(ch, bodyFont, slide);
-                    }
-                    catch { }
-                }
-            }
+                NormalizeTextRun(tr, bodyFont, slide, blackFont, keepColor);
         }
 
         public static void FixTextBoxShape(PowerPoint.Shape shape, PowerPoint.Slide slide)
@@ -223,14 +266,50 @@ namespace Cat.Commands
                 try { tf.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorTop; } catch { }
                 ShapeHelpers.SetAutoSize(shape, PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText);
                 var tr = tf.TextRange;
-                Cmd.SetSingleLineSpacing(tr);
-                FixTextRangeFormatting(tr, slide);
+                bool kpmgBold = IsOnlyFont(tr, "KPMG Bold");
+                if (kpmgBold) Cmd.SetMultipleLineSpacing(tr, 0.8f);
+                else Cmd.SetSingleLineSpacing(tr);
+                var bulletParagraphs = BulletParagraphIndexes(tr);
+                FixTextRangeFormatting(tr, slide, blackFont: !kpmgBold, keepFont: kpmgBold, keepColor: kpmgBold);
+                ResetPlainParagraphLayout(tr, bulletParagraphs);
                 ClearTextHighlights(shape);
+                FinishResetTypography(shape, keepColor: kpmgBold);
+                if (bulletParagraphs.Count > 0) ApplyResetBullets(shape, tr, bulletParagraphs);
             }
             catch { }
         }
 
-        private static void NormalizeTextRun(PowerPoint.TextRange run, string bodyFont, PowerPoint.Slide slide)
+        private static bool IsOnlyFont(PowerPoint.TextRange tr, string fontName)
+        {
+            if (tr == null || string.IsNullOrEmpty(fontName)) return false;
+            bool any = false;
+            try
+            {
+                for (int i = 1; i <= 500; i++)
+                {
+                    PowerPoint.TextRange run;
+                    try { run = tr.Runs(i); }
+                    catch { break; }
+                    if (run == null || run.Length < 1) break;
+
+                    string text;
+                    try { text = run.Text ?? ""; }
+                    catch { text = ""; }
+                    if (text.Trim('\r', '\n', '\v', '\t', ' ').Length == 0) continue;
+
+                    string name;
+                    try { name = run.Font.Name ?? ""; }
+                    catch { return false; }
+                    if (!string.Equals(name.Trim(), fontName, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                    any = true;
+                }
+            }
+            catch { return false; }
+            return any;
+        }
+
+        private static void NormalizeTextRun(PowerPoint.TextRange run, string bodyFont, PowerPoint.Slide slide, bool blackFont, bool keepColor = false)
         {
             if (run == null) return;
             float size;
@@ -249,7 +328,7 @@ namespace Cat.Commands
                 f.Superscript = Office.MsoTriState.msoFalse;
                 f.Subscript = Office.MsoTriState.msoFalse;
                 try { f.BaselineOffset = 0f; } catch { }
-                f.Name = bodyFont;
+                if (!string.IsNullOrEmpty(bodyFont)) f.Name = bodyFont;
                 f.Size = size;
             }
             catch { }
@@ -263,23 +342,213 @@ namespace Cat.Commands
                 try { df.SmallCaps = Office.MsoTriState.msoFalse; } catch { }
                 try { df.Spacing = 0f; } catch { }
                 try { df.CharacterSpacing = 0f; } catch { }
+                try { df.Kerning = 0f; } catch { }
                 try { df.Kernings = Office.MsoTriState.msoFalse; } catch { }
                 try { df.Highlight = Office.MsoTriState.msoFalse; } catch { }
             }
             catch { }
 
-            TextBlockThemeHelper.ApplyText1Color(run, slide);
-            ClearRunHighlight(run);
+            if (!keepColor)
+            {
+                if (blackFont)
+                    ApplyExplicitBlack(run);
+                else
+                    TextBlockThemeHelper.ApplyText1Color(run, slide);
+            }
+            ClearRunHighlight(run, keepColor);
         }
 
-        private static void ClearRunHighlight(PowerPoint.TextRange run)
+        /// <summary>RGB 0 is treated as automatic and stays theme white. 0x010000 is BGR for RGB(0,0,1).</summary>
+        private static void ApplyExplicitBlack(PowerPoint.TextRange run)
+        {
+            try
+            {
+                dynamic color = run.Font.Color;
+                try { color.ObjectThemeColor = Office.MsoThemeColorIndex.msoNotThemeColor; } catch { }
+                color.RGB = 0x010000;
+            }
+            catch
+            {
+                try { run.Font.Color.RGB = 0x010000; } catch { }
+            }
+        }
+
+        /// <summary>Font dialog spacing (condense/expand) and color live on TextFrame2. Once per run, not per character.</summary>
+        private static void FinishResetTypography(PowerPoint.Shape shape, bool keepColor = false)
+        {
+            try
+            {
+                dynamic tr2 = shape.TextFrame2.TextRange;
+                ApplyFont2Reset(tr2.Font, keepColor);
+                try
+                {
+                    dynamic runs = tr2.Runs;
+                    int count = (int)runs.Count;
+                    for (int i = 1; i <= count && i <= 500; i++)
+                    {
+                        try { ApplyFont2Reset(runs[i].Font, keepColor); }
+                        catch { try { ApplyFont2Reset(runs.Item(i).Font, keepColor); } catch { } }
+                    }
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+        private static void ApplyFont2Reset(dynamic font, bool keepColor)
+        {
+            try { font.Spacing = 0f; } catch { }
+            try { font.Kerning = 0f; } catch { }
+            if (keepColor) return;
+            try
+            {
+                dynamic fill = font.Fill;
+                fill.Visible = Office.MsoTriState.msoTrue;
+                fill.Solid();
+                dynamic fore = fill.ForeColor;
+                try { fore.ObjectThemeColor = Office.MsoThemeColorIndex.msoNotThemeColor; } catch { }
+                fore.RGB = 0x010000;
+            }
+            catch { }
+        }
+
+        private static List<int> BulletParagraphIndexes(PowerPoint.TextRange tr)
+        {
+            var indexes = new List<int>();
+            try
+            {
+                int n = tr.Paragraphs().Count;
+                for (int i = 1; i <= n; i++)
+                    if (ParagraphHasBullet(tr.Paragraphs(i))) indexes.Add(i);
+            }
+            catch { }
+            return indexes;
+        }
+
+        private static bool ParagraphHasBullet(PowerPoint.TextRange paragraph)
+        {
+            try
+            {
+                var bullet = paragraph.ParagraphFormat.Bullet;
+                if (bullet.Visible == Office.MsoTriState.msoFalse) return false;
+                var type = bullet.Type;
+                return type != PowerPoint.PpBulletType.ppBulletNone;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Non-bullet paragraphs: no extra spacing or indent. Box margins are already zero.</summary>
+        private static void ResetPlainParagraphLayout(PowerPoint.TextRange tr, List<int> bulletParagraphs)
+        {
+            var bullets = new HashSet<int>(bulletParagraphs);
+            try
+            {
+                int n = tr.Paragraphs().Count;
+                for (int i = 1; i <= n; i++)
+                {
+                    if (bullets.Contains(i)) continue;
+                    try
+                    {
+                        var pf = tr.Paragraphs(i).ParagraphFormat;
+                        try { pf.SpaceBefore = 0f; } catch { }
+                        try { pf.SpaceAfter = 0f; } catch { }
+                        dynamic format = pf;
+                        try { format.LeftIndent = 0f; } catch { }
+                        try { format.FirstLineIndent = 0f; } catch { }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        private static void ApplyResetBullets(PowerPoint.Shape shape, PowerPoint.TextRange tr, List<int> paragraphIndexes)
+        {
+            foreach (int i in paragraphIndexes)
+            {
+                try
+                {
+                    var p = tr.Paragraphs(i);
+                    int level = 1;
+                    try { level = Clamp(p.IndentLevel, 1, 5); } catch { }
+
+                    var pf = p.ParagraphFormat;
+                    var bullet = pf.Bullet;
+                    bullet.Visible = Office.MsoTriState.msoTrue;
+                    bullet.Type = PowerPoint.PpBulletType.ppBulletUnnumbered;
+                    bullet.Character = 0x2022;
+                    bullet.RelativeSize = 1f;
+                    try { bullet.UseTextColor = Office.MsoTriState.msoTrue; } catch { }
+                    try { bullet.UseTextFont = Office.MsoTriState.msoTrue; } catch { }
+                    try { p.IndentLevel = level; } catch { }
+
+                    float stepPt = (ParagraphFontSize(p) >= 10.5f ? 0.2f : 0.15f) * 72f;
+                    // Before text grows by one step per level. Hanging stays one step, so the bullet sits one step to the left of the text.
+                    float beforePt = stepPt * level;
+                    float bulletPt = stepPt * (level - 1);
+                    SetBulletIndent(shape, pf, level, bulletPt, beforePt);
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>
+        /// The paragraph dialog reads the text-frame ruler for bulleted text. ParagraphFormat indents alone leave the template ruler (often 0.31") in place.
+        /// </summary>
+        private static void SetBulletIndent(PowerPoint.Shape shape, PowerPoint.ParagraphFormat pf, int level, float bulletPt, float beforePt)
+        {
+            try
+            {
+                dynamic format = pf;
+                format.FirstLineIndent = bulletPt - beforePt;
+                format.LeftIndent = beforePt;
+            }
+            catch { }
+
+            try
+            {
+                var rulerLevel = shape.TextFrame.Ruler.Levels[level];
+                rulerLevel.FirstMargin = bulletPt;
+                rulerLevel.LeftMargin = beforePt;
+            }
+            catch { }
+
+            try
+            {
+                dynamic ruler2 = shape.TextFrame2.Ruler;
+                dynamic rulerLevel2 = ruler2.Levels[level];
+                rulerLevel2.FirstMargin = bulletPt;
+                rulerLevel2.LeftMargin = beforePt;
+            }
+            catch { }
+        }
+
+        private static float ParagraphFontSize(PowerPoint.TextRange paragraph)
+        {
+            try
+            {
+                int len = paragraph.Length;
+                if (len > 1)
+                {
+                    float size = paragraph.Characters(1, 1).Font.Size;
+                    if (size >= 1f) return size;
+                }
+                float paraSize = paragraph.Font.Size;
+                if (paraSize >= 1f) return paraSize;
+            }
+            catch { }
+            return 12f;
+        }
+
+        private static void ClearRunHighlight(PowerPoint.TextRange run, bool keepColor)
         {
             if (run == null) return;
             try
             {
                 dynamic f = run.Font;
                 try { f.Highlight = Office.MsoTriState.msoFalse; } catch { }
-                try { f.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
+                if (!keepColor)
+                    try { f.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
             }
             catch { }
         }
@@ -288,21 +557,8 @@ namespace Cat.Commands
         {
             try
             {
-                dynamic tr2 = shape.TextFrame2.TextRange;
-                int len = (int)tr2.Length;
-                if (len < 1) return;
-                int max = Math.Min(len, 10000);
-                for (int i = 1; i <= max; i++)
-                {
-                    try
-                    {
-                        dynamic ch = tr2.Characters[i, 1];
-                        dynamic font = ch.Font;
-                        try { font.HighlightColor.ObjectThemeColor = Office.MsoThemeColorIndex.msoNotThemeColor; } catch { }
-                        try { font.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
-                    }
-                    catch { }
-                }
+                dynamic highlight = shape.TextFrame2.TextRange.Font.Highlight;
+                highlight.Transparency = 1f;
             }
             catch { }
         }
@@ -701,9 +957,407 @@ namespace Cat.Commands
                 ph.Left = lp.Left; ph.Top = lp.Top; ph.Width = lp.Width; ph.Height = lp.Height;
                 try { ph.Rotation = lp.Rotation; } catch { }
             }
+
+            RestoreFooterAndSource(slide, layout);
         }
+
+        private static void RestoreFooterAndSource(PowerPoint.Slide slide, PowerPoint.CustomLayout layout)
+        {
+            FooterSource.ApplyReference(slide, layout);
+        }
+
         private static string Key(PowerPoint.Shape ph)
         { try { var pf = ph.PlaceholderFormat; return $"{(int)pf.Type}:{pf.ContainedType}"; } catch { return ph.Name; } }
+    }
+
+    public sealed class AddFooterSourceCommand : ICommand
+    {
+        public string Name => "Footer and source";
+        public bool CanExecute(CommandContext c) => c.ActiveSlide != null;
+        public void Execute(CommandContext c)
+        {
+            var slide = c.ActiveSlide;
+            var layout = slide.CustomLayout;
+            if (layout == null)
+            {
+                Notifier.Info("This slide has no layout to hold the footer and source.");
+                return;
+            }
+
+            try
+            {
+                FooterSource.EnsureOnLayout(layout, slide);
+                FooterSource.EnsureOnSlide(slide, layout);
+                FooterSource.ApplyReference(slide, layout);
+            }
+            catch (Exception ex)
+            {
+                Notifier.Error("Could not add the footer and source: " + ex.Message);
+            }
+        }
+    }
+
+    internal static class FooterSource
+    {
+        public const string SourceName = "Source";
+        public const string FooterName = "Footer";
+
+        // Reference deck "Footer and source reference.pptx", 13.333 x 7.5 in. EMU / 12700 = points.
+        const float RefSlideHeight = 540f;
+        const float BoxLeft = 995364f / 12700f;
+        const float BoxWidth = 7071360f / 12700f;
+        const float BoxHeight = 123111f / 12700f;
+        const float FooterTopOnRef = 5853192f / 12700f;
+        const float SourceTopOnRef = 6037152f / 12700f;
+        const float FootnoteIndent = 18f;
+
+        public static void EnsureOnLayout(PowerPoint.CustomLayout layout, PowerPoint.Slide slide)
+        {
+            float slideHeight = SlideHeight(slide);
+            if (FindFooter(layout.Shapes) == null)
+            {
+                try
+                {
+                    layout.Shapes.AddPlaceholder(
+                        PowerPoint.PpPlaceholderType.ppPlaceholderFooter,
+                        BoxLeft, TopFromBottom(slideHeight, FooterTopOnRef), BoxWidth, BoxHeight);
+                }
+                catch { }
+            }
+
+            var source = FindSource(layout.Shapes);
+            if (source != null && !IsPlaceholder(source))
+            {
+                string kept = ReadText(source);
+                try { source.Delete(); } catch { }
+                source = null;
+                var created = AddSourcePlaceholder(layout, TopFromBottom(slideHeight, SourceTopOnRef));
+                if (created != null && !string.IsNullOrWhiteSpace(kept))
+                    try { created.TextFrame.TextRange.Text = kept; } catch { }
+            }
+            else if (source == null)
+            {
+                AddSourcePlaceholder(layout, TopFromBottom(slideHeight, SourceTopOnRef));
+            }
+            else
+            {
+                MarkSource(source);
+            }
+        }
+
+        public static void EnsureOnSlide(PowerPoint.Slide slide, PowerPoint.CustomLayout layout)
+        {
+            if (FindFooter(slide.Shapes) == null)
+            {
+                try { slide.HeadersFooters.Footer.Visible = Office.MsoTriState.msoTrue; } catch { }
+                if (FindFooter(slide.Shapes) == null)
+                    CopyShape(slide, FindFooter(layout.Shapes), FooterName);
+            }
+
+            var layoutSource = FindSource(layout.Shapes);
+            var slideSource = FindSource(slide.Shapes);
+            if (slideSource != null && !IsPlaceholder(slideSource))
+            {
+                string kept = ReadText(slideSource);
+                try { slideSource.Delete(); } catch { }
+                slideSource = PasteSourcePlaceholder(slide, layoutSource);
+                if (slideSource != null && !string.IsNullOrWhiteSpace(kept))
+                    try { slideSource.TextFrame.TextRange.Text = kept; } catch { }
+            }
+            else if (slideSource == null)
+            {
+                PasteSourcePlaceholder(slide, layoutSource);
+            }
+            else
+            {
+                MarkSource(slideSource);
+            }
+        }
+
+        public static void ApplyReference(PowerPoint.Slide slide, PowerPoint.CustomLayout layout)
+        {
+            float slideHeight = SlideHeight(slide);
+            string textFont = TextBlockThemeHelper.TryThemeMinorFont(slide);
+            string bulletFont = TextBlockThemeHelper.TryThemeMajorFont(slide);
+            ApplyFootnote(FindFooter(layout.Shapes), slide, slideHeight, textFont, bulletFont);
+            ApplyFootnote(FindFooter(slide.Shapes), slide, slideHeight, textFont, bulletFont);
+            ApplySource(FindSource(layout.Shapes), slide, slideHeight);
+            ApplySource(FindSource(slide.Shapes), slide, slideHeight);
+        }
+
+        private static float SlideHeight(PowerPoint.Slide slide)
+        {
+            try { return ((PowerPoint.Presentation)slide.Parent).PageSetup.SlideHeight; }
+            catch { return RefSlideHeight; }
+        }
+
+        private static float TopFromBottom(float slideHeight, float topOnRef)
+        {
+            return slideHeight - (RefSlideHeight - topOnRef);
+        }
+
+        private static void ApplyFootnote(PowerPoint.Shape shape, PowerPoint.Slide slide, float slideHeight, string textFont, string bulletFont)
+        {
+            if (shape == null || !ShapeHelpers.HasTextFrame(shape)) return;
+            Place(shape, TopFromBottom(slideHeight, FooterTopOnRef));
+            var tf = shape.TextFrame;
+            try { tf.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorBottom; } catch { }
+            ZeroMargins(tf);
+            try { tf.WordWrap = Office.MsoTriState.msoTrue; } catch { }
+            try { tf.AutoSize = PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText; } catch { }
+
+            var tr = tf.TextRange;
+            try { if (string.IsNullOrWhiteSpace(tr.Text)) tr.Text = "XX"; } catch { }
+            try
+            {
+                tr.Font.Name = textFont;
+                tr.Font.Size = 8f;
+                tr.Font.Bold = Office.MsoTriState.msoFalse;
+                TextBlockThemeHelper.ApplyText1Color(tr, slide);
+            }
+            catch { }
+
+            try
+            {
+                var pf = tr.ParagraphFormat;
+                pf.Alignment = PowerPoint.PpParagraphAlignment.ppAlignLeft;
+                pf.LineRuleWithin = Office.MsoTriState.msoTrue;
+                pf.SpaceWithin = 1f;
+                pf.SpaceBefore = 0f;
+                pf.SpaceAfter = 0f;
+                var bullet = pf.Bullet;
+                bullet.Visible = Office.MsoTriState.msoTrue;
+                bullet.Type = PowerPoint.PpBulletType.ppBulletNumbered;
+                try { bullet.Style = PowerPoint.PpNumberedBulletStyle.ppBulletArabicPeriod; } catch { }
+                bullet.RelativeSize = 1f;
+                try { bullet.UseTextColor = Office.MsoTriState.msoTrue; } catch { }
+                try { bullet.Font.Name = bulletFont; } catch { }
+                dynamic format = pf;
+                try { format.LeftIndent = FootnoteIndent; } catch { }
+                try { format.FirstLineIndent = -FootnoteIndent; } catch { }
+            }
+            catch { }
+
+            try
+            {
+                var level = shape.TextFrame.Ruler.Levels[1];
+                level.FirstMargin = 0f;
+                level.LeftMargin = FootnoteIndent;
+            }
+            catch { }
+
+            Place(shape, TopFromBottom(slideHeight, FooterTopOnRef));
+        }
+
+        private static void ApplySource(PowerPoint.Shape shape, PowerPoint.Slide slide, float slideHeight)
+        {
+            if (shape == null || !ShapeHelpers.HasTextFrame(shape)) return;
+            Place(shape, TopFromBottom(slideHeight, SourceTopOnRef));
+            var tf = shape.TextFrame;
+            try { tf.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorTop; } catch { }
+            ZeroMargins(tf);
+            try { tf.WordWrap = Office.MsoTriState.msoTrue; } catch { }
+            try { tf.AutoSize = PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText; } catch { }
+
+            var tr = tf.TextRange;
+            try { if (string.IsNullOrWhiteSpace(tr.Text)) tr.Text = SourceName; } catch { }
+            try
+            {
+                tr.Font.Name = "Arial";
+                tr.Font.Size = 8f;
+                tr.Font.Bold = Office.MsoTriState.msoFalse;
+                TextBlockThemeHelper.ApplyText1Color(tr, slide);
+            }
+            catch { }
+
+            try
+            {
+                var pf = tr.ParagraphFormat;
+                pf.Alignment = PowerPoint.PpParagraphAlignment.ppAlignLeft;
+                pf.LineRuleWithin = Office.MsoTriState.msoTrue;
+                pf.SpaceWithin = 1f;
+                pf.SpaceBefore = 0f;
+                try { pf.LineRuleAfter = Office.MsoTriState.msoFalse; } catch { }
+                pf.SpaceAfter = 6f;
+                var bullet = pf.Bullet;
+                bullet.Type = PowerPoint.PpBulletType.ppBulletNone;
+                bullet.Visible = Office.MsoTriState.msoFalse;
+                dynamic format = pf;
+                try { format.LeftIndent = 0f; } catch { }
+                try { format.FirstLineIndent = 0f; } catch { }
+            }
+            catch { }
+
+            Place(shape, TopFromBottom(slideHeight, SourceTopOnRef));
+        }
+
+        private static void Place(PowerPoint.Shape shape, float top)
+        {
+            try { shape.LockAspectRatio = Office.MsoTriState.msoFalse; } catch { }
+            try { shape.Line.Visible = Office.MsoTriState.msoFalse; } catch { }
+            try { shape.Fill.Visible = Office.MsoTriState.msoFalse; } catch { }
+            shape.Left = BoxLeft;
+            shape.Top = top;
+            shape.Width = BoxWidth;
+            shape.Height = BoxHeight;
+        }
+
+        private static void ZeroMargins(PowerPoint.TextFrame tf)
+        {
+            try
+            {
+                tf.MarginLeft = 0f;
+                tf.MarginRight = 0f;
+                tf.MarginTop = 0f;
+                tf.MarginBottom = 0f;
+            }
+            catch { }
+        }
+
+        public static PowerPoint.Shape FindFooter(PowerPoint.Shapes shapes)
+        {
+            PowerPoint.Shape named = null;
+            try
+            {
+                foreach (PowerPoint.Shape s in shapes)
+                {
+                    try
+                    {
+                        if (s.Type == Office.MsoShapeType.msoPlaceholder
+                            && s.PlaceholderFormat.Type == PowerPoint.PpPlaceholderType.ppPlaceholderFooter)
+                            return s;
+                    }
+                    catch { }
+                    try
+                    {
+                        if (named == null && string.Equals(s.Name, FooterName, StringComparison.OrdinalIgnoreCase))
+                            named = s;
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return named;
+        }
+
+        public static PowerPoint.Shape FindSource(PowerPoint.Shapes shapes)
+        {
+            PowerPoint.Shape named = null;
+            try
+            {
+                foreach (PowerPoint.Shape s in shapes)
+                {
+                    if (!IsSourceShape(s)) continue;
+                    if (IsPlaceholder(s)) return s;
+                    if (named == null) named = s;
+                }
+            }
+            catch { }
+            return named;
+        }
+
+        private static PowerPoint.Shape AddSourcePlaceholder(PowerPoint.CustomLayout layout, float top)
+        {
+            PowerPoint.Shape source = null;
+            try
+            {
+                source = layout.Shapes.AddPlaceholder(
+                    PowerPoint.PpPlaceholderType.ppPlaceholderBody, BoxLeft, top, BoxWidth, BoxHeight);
+            }
+            catch
+            {
+                try
+                {
+                    source = layout.Shapes.AddPlaceholder(
+                        PowerPoint.PpPlaceholderType.ppPlaceholderObject, BoxLeft, top, BoxWidth, BoxHeight);
+                }
+                catch { return null; }
+            }
+            MarkSource(source);
+            return source;
+        }
+
+        private static PowerPoint.Shape PasteSourcePlaceholder(PowerPoint.Slide slide, PowerPoint.Shape layoutShape)
+        {
+            if (layoutShape == null) return null;
+            try
+            {
+                layoutShape.Copy();
+                var pasted = slide.Shapes.Paste()[1];
+                MarkSource(pasted);
+                return pasted;
+            }
+            catch { return null; }
+        }
+
+        private static void MarkSource(PowerPoint.Shape shape)
+        {
+            if (shape == null) return;
+            try { shape.Name = SourceName; } catch { }
+            try { shape.Tags.Add("CAT_ROLE", "Source"); } catch { }
+        }
+
+        private static bool IsPlaceholder(PowerPoint.Shape shape)
+        {
+            try { return shape != null && shape.Type == Office.MsoShapeType.msoPlaceholder; }
+            catch { return false; }
+        }
+
+        private static bool IsSourceShape(PowerPoint.Shape shape)
+        {
+            try
+            {
+                string name = shape.Name ?? "";
+                if (name.Equals(SourceName, StringComparison.OrdinalIgnoreCase)) return true;
+                if (name.StartsWith(SourceName + " ", StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            catch { }
+
+            try
+            {
+                int n = shape.Tags.Count;
+                for (int i = 1; i <= n; i++)
+                {
+                    if (string.Equals(shape.Tags.Name(i), "CAT_ROLE", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(shape.Tags.Value(i), "Source", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static string ReadText(PowerPoint.Shape shape)
+        {
+            try
+            {
+                if (!ShapeHelpers.HasTextFrame(shape)) return "";
+                return shape.TextFrame.TextRange.Text ?? "";
+            }
+            catch { return ""; }
+        }
+
+        private static void CopyShape(PowerPoint.Slide slide, PowerPoint.Shape layoutShape, string name)
+        {
+            if (layoutShape == null) return;
+            float left = 0f, top = 0f, width = 72f, height = 20f;
+            try { left = layoutShape.Left; top = layoutShape.Top; width = layoutShape.Width; height = layoutShape.Height; } catch { }
+
+            var box = slide.Shapes.AddTextbox(Office.MsoTextOrientation.msoTextOrientationHorizontal, left, top, width, height);
+            try { box.Name = name; } catch { }
+
+            string text = name;
+            try
+            {
+                if (ShapeHelpers.HasTextFrame(layoutShape))
+                {
+                    var existing = layoutShape.TextFrame.TextRange.Text;
+                    if (!string.IsNullOrWhiteSpace(existing)) text = existing;
+                }
+            }
+            catch { }
+            TemplateElementHelper.ApplyAsFixedElement(box, layoutShape, text);
+        }
     }
 
     public sealed class CopyPositionCommand : ICommand
@@ -1086,10 +1740,12 @@ namespace Cat.Commands
     public sealed class SplitJoinTextboxesCommand : ICommand
     {
         public string Name => "Split/Join Textboxes";
-        public bool CanExecute(CommandContext c) => c.HasShapeSelection;
+        public bool CanExecute(CommandContext c) =>
+            Cmd.EditableShapes(c).Any(ShapeHelpers.HasTextFrame);
         public void Execute(CommandContext c)
         {
-            var r = Dialogs.ShowSplitJoin(c.SelectedShapes.Count >= 2);
+            int count = Cmd.EditableShapes(c).Count;
+            var r = Dialogs.ShowSplitJoin(count >= 2);
             if (!r.Ok) return;
             if (r.Mode == SplitJoinMode.Split) DoSplit(c, r.Level, r.KeepFormatting);
             else DoJoin(c, r.KeepFormatting);
@@ -1097,40 +1753,68 @@ namespace Cat.Commands
 
         private static void DoSplit(CommandContext c, int level, bool keep)
         {
-            var source = c.SelectedShapes[1];
+            var shapes = Cmd.EditableShapes(c);
+            if (shapes.Count < 1) return;
+            var source = shapes[0];
             if (!ShapeHelpers.HasTextFrame(source)) return;
             var tr = source.TextFrame.TextRange;
             int paraCount = tr.Paragraphs().Count;
             if (paraCount <= 1) return;
 
-            var chunks = new List<List<string>>(); var cur = new List<string>();
+            var chunks = new List<List<int>>();
+            var cur = new List<int>();
             for (int i = 1; i <= paraCount; i++)
             {
                 var p = tr.Paragraphs(i);
                 bool boundary = (level == -1) || (p.IndentLevel <= level);
-                if (boundary && cur.Count > 0) { chunks.Add(cur); cur = new List<string>(); }
-                cur.Add(p.Text.TrimEnd('\r', '\n'));
+                if (boundary && cur.Count > 0) { chunks.Add(cur); cur = new List<int>(); }
+                cur.Add(i);
             }
             if (cur.Count > 0) chunks.Add(cur);
             if (chunks.Count <= 1) return;
 
-            var slide = c.ActiveSlide; float top = source.Top;
+            var slide = c.ActiveSlide;
+            float top = source.Top;
             foreach (var chunk in chunks)
             {
-                string text = string.Join("\r", chunk);
-                PowerPoint.Shape box = keep ? source.Duplicate()[1]
+                PowerPoint.Shape box = keep
+                    ? source.Duplicate()[1]
                     : slide.Shapes.AddTextbox(Office.MsoTextOrientation.msoTextOrientationHorizontal, source.Left, top, source.Width, 20);
-                box.Left = source.Left; box.Top = top;
-                box.TextFrame.TextRange.Text = Cmd.TextOrPlaceholder(text);
+                box.Left = source.Left;
+                box.Top = top;
+                if (keep)
+                    KeepParagraphs(box, chunk);
+                else
+                {
+                    var texts = new List<string>();
+                    foreach (int index in chunk)
+                        texts.Add(tr.Paragraphs(index).Text.TrimEnd('\r', '\n'));
+                    box.TextFrame.TextRange.Text = Cmd.TextOrPlaceholder(string.Join("\r", texts));
+                }
                 box.TextFrame.AutoSize = PowerPoint.PpAutoSize.ppAutoSizeShapeToFitText;
                 top = box.Top + box.Height + 6f;
             }
             source.Delete();
         }
 
+        /// <summary>Drop every paragraph that is not in the chunk so each run keeps its own formatting.</summary>
+        private static void KeepParagraphs(PowerPoint.Shape box, List<int> keepIndexes)
+        {
+            var keep = new HashSet<int>(keepIndexes);
+            var range = box.TextFrame.TextRange;
+            int count;
+            try { count = range.Paragraphs().Count; }
+            catch { return; }
+            for (int i = count; i >= 1; i--)
+            {
+                if (keep.Contains(i)) continue;
+                try { range.Paragraphs(i).Delete(); } catch { }
+            }
+        }
+
         private static void DoJoin(CommandContext c, bool keep)
         {
-            var ordered = c.OrderedSelection().Where(ShapeHelpers.HasTextFrame).ToList();
+            var ordered = Cmd.EditableShapes(c).Where(ShapeHelpers.HasTextFrame).ToList();
             if (ordered.Count < 2) return;
             var first = ordered[0];
             var sb = new StringBuilder();
@@ -1255,6 +1939,101 @@ namespace Cat.Commands
             catch { return ""; }
             t = t.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
             return t.Trim();
+        }
+    }
+
+    /// <summary>
+    /// Paste a tab-separated column, row, or table into the selected boxes by position.
+    /// Row and column come from the same 8 pt grid used by Copy for Excel.
+    /// </summary>
+    public sealed class PasteForExcelCommand : ICommand
+    {
+        public string Name => "Paste into boxes";
+        public bool CanExecute(CommandContext c) => true;
+
+        public void Execute(CommandContext c)
+        {
+            if (!CanFill(c))
+            {
+                Notifier.Info("Select the destination boxes and copy a column, row, or table first.");
+                return;
+            }
+            Fill(c);
+        }
+
+        public static bool CanFill(CommandContext c)
+        {
+            if (c == null || c.HasTextSelection) return false;
+            if (TextShapes(c).Count < 2) return false;
+            return TryReadMultiCell(out _);
+        }
+
+        public static void Fill(CommandContext c)
+        {
+            if (!TryReadMultiCell(out string[,] cells)) return;
+            var rows = GridDetector.Rows(TextShapes(c));
+            int gridRows = cells.GetLength(0);
+            int gridCols = cells.GetLength(1);
+            for (int r = 0; r < rows.Count && r < gridRows; r++)
+            {
+                var row = rows[r];
+                for (int col = 0; col < row.Count && col < gridCols; col++)
+                {
+                    string cell = cells[r, col];
+                    if (string.IsNullOrEmpty(cell)) continue;
+                    try { ReplaceTextKeepFormat(row[col], cell); }
+                    catch { }
+                }
+            }
+        }
+
+        private static bool TryReadMultiCell(out string[,] cells)
+        {
+            cells = null;
+            if (!TableCreatorClipboardReader.TryReadGrid(out cells, out _)) return false;
+            if (cells == null) return false;
+            return cells.GetLength(0) * cells.GetLength(1) >= 2;
+        }
+
+        private static List<PowerPoint.Shape> TextShapes(CommandContext c)
+        {
+            return ShapeHelpers.ToList(c.SelectedShapes).Where(ShapeHelpers.HasTextFrame).ToList();
+        }
+
+        private static void ReplaceTextKeepFormat(PowerPoint.Shape shape, string text)
+        {
+            var range = shape.TextFrame.TextRange;
+            string fontName = null;
+            float size = 0f;
+            var bold = Office.MsoTriState.msoTriStateMixed;
+            var italic = Office.MsoTriState.msoTriStateMixed;
+            int color = 0;
+            try
+            {
+                if (range.Length > 0)
+                {
+                    var font = range.Characters(1, 1).Font;
+                    fontName = font.Name;
+                    size = font.Size;
+                    bold = font.Bold;
+                    italic = font.Italic;
+                    try { color = font.Color.RGB; } catch { color = 0; }
+                }
+            }
+            catch { }
+
+            range.Text = text ?? "";
+
+            try
+            {
+                var font = range.Font;
+                if (!string.IsNullOrEmpty(fontName)) font.Name = fontName;
+                if (size > 0f) font.Size = size;
+                if (bold != Office.MsoTriState.msoTriStateMixed) font.Bold = bold;
+                if (italic != Office.MsoTriState.msoTriStateMixed) font.Italic = italic;
+                if (color != 0) font.Color.RGB = color;
+            }
+            catch { }
         }
     }
 

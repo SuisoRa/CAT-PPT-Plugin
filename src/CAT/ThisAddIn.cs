@@ -10,6 +10,7 @@ using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
 [assembly: AssemblyTitle("CAT")]
 [assembly: AssemblyDescription("PowerPoint keyboard shortcuts and Auto format toolbar")]
+[assembly: AssemblyCompany("Adithya Padmanabhan")]
 [assembly: AssemblyProduct("CAT")]
 [assembly: ComVisible(false)]
 [assembly: Guid("c8e4b2a1-7d3f-4c9e-8a12-5b6d0e1f3a88")]

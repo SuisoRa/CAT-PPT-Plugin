@@ -18,7 +18,10 @@
     <BootstrapperComponentsLocation>HomeSite</BootstrapperComponentsLocation>
     <ResolveComReferenceSilent>true</ResolveComReferenceSilent>
     <SignManifests>true</SignManifests>
-    <ManifestCertificateThumbprint>D8B04CA337DB701E077EBE3D2D46CA2B9741A37E</ManifestCertificateThumbprint>
+    <GenerateManifests>true</GenerateManifests>
+    <PublisherName>Adithya Padmanabhan</PublisherName>
+    <ProductName>CAT PowerPoint add-in</ProductName>
+    <ManifestCertificateThumbprint>FEF2719F33C76F1FD41620F40FC9B60E771EB6C0</ManifestCertificateThumbprint>
   </PropertyGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.VSTORuntime.4.0">

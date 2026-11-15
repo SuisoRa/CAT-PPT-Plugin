@@ -274,7 +274,7 @@ namespace Cat.Core
 
     public static class BuildInfo
     {
-        public const string Version = "1.0.0";
+        public const string Version = "1.1.0";
         public const string DisplayName = "CAT";
         public static string VersionLabel => $"{DisplayName}  \u2022  {Version}";
     }

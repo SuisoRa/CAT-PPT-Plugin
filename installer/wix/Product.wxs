@@ -2,8 +2,8 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?define ProductName = "CAT PowerPoint add-in" ?>
-  <?define ProductVersion = "1.0.0.0" ?>
-  <?define Manufacturer = "CAT" ?>
+  <?define ProductVersion = "1.1.0.0" ?>
+  <?define Manufacturer = "Adithya Padmanabhan" ?>
   <?define UpgradeCode = "7C4E9A2B-1D8F-4E6C-9B3A-2F5D8E1C0A94" ?>
 
   <Product Id="*"

@@ -19,6 +19,29 @@ Windows VSTO add-in for classic desktop PowerPoint (365 / 2021 / 2019 / 2016). T
 3. Register the add-in: run `installer/install-addin.ps1`, or set `Manifest` in `installer/register-addin.reg` to your `CAT.vsto` path and merge the reg file.
 4. Restart PowerPoint.
 
+### Publisher name (development certificate)
+
+The Office Customization Installer shows the subject of the certificate that signs `CAT.vsto` and `CAT.dll.manifest`. This project signs those manifests with a self-signed certificate whose subject is **Adithya Padmanabhan**. The private key is in `Cert:\CurrentUser\My` on the build PC. It is not a `.pfx` in the repo, and Office trust checks stay on. Users can still see an untrusted-publisher warning.
+
+In Visual Studio:
+
+1. Open `src/CAT/CAT.sln`.
+2. Right-click the **CAT** project, then **Properties**.
+3. Open **Signing**.
+4. Leave **Sign the ClickOnce manifests** checked.
+5. Choose the certificate **Adithya Padmanabhan** from the store. Its thumbprint is `FEF2719F33C76F1FD41620F40FC9B60E771EB6C0`, which is already stored in `CAT.csproj`.
+6. Build **Release** (or F5 for Debug).
+
+Check the name after a build:
+
+```powershell
+.\installer\ensure-dev-certificate.ps1
+```
+
+Then open `src\CAT\bin\Release\CAT.vsto` and confirm `publisherIdentity name="CN=Adithya Padmanabhan"`. Installing or updating from that file shows **Adithya Padmanabhan** in the Office Customization Installer. A self-signed certificate still shows a trust warning.
+
+The WiX package uses the same publisher name in Add/Remove Programs. `installer\build-installer.ps1` signs `CAT.msi` and `CAT-Setup.exe` with this certificate when `signtool` is installed. That signature is still self-signed, so SmartScreen can warn.
+
 ### WiX package (new PC / shared rollout)
 
 Per-user installer with offline **.NET 4.8** and **VSTO Runtime** prerequisites. See **`installer/wix/README.md`**.

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnLoad">
+  <commands>
+    <command idMso="Paste" onAction="OnPaste" />
+  </commands>
   <ribbon>
     <tabs>
       <tab id="catTab" label="CAT" insertAfterMso="TabHome">
@@ -55,6 +58,9 @@
         <group id="catGrpCopyExcel" label="Copy for Excel">
           <button id="catCopyExcel" label="Copy for Excel" size="large" getImage="GetImage" onAction="OnAction"
                   screentip="Copy selection text as tab-separated grid for Excel" />
+          <button id="catPasteExcel" label="Paste into boxes" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Paste a copied column, row, or table into the matching boxes"
+                  supertip="Ctrl+V does this when several boxes are selected and the clipboard is a column, row, or table. Each cell keeps the box's existing formatting. Empty cells are left unchanged." />
         </group>
 
         <group id="catGroupingGroup" label="Grouping">
@@ -101,6 +107,9 @@
         <!-- End of tab: Reset, Shape support, then Help -->
         <group id="catResetGroup" label="Reset fixed">
           <button id="catReset" label="Reset fixed elements" size="large" getImage="GetImage" onAction="OnAction" screentip="Ctrl+Alt+R" />
+          <button id="catAddFooterSource" label="Footer and source" size="large" getImage="GetImage" onAction="OnAction"
+                  screentip="Add the layout footer and source to this slide"
+                  supertip="Creates them on this slide's layout if they are missing. Move and format them in the Slide Master. Reset fixed elements restores position and formatting and keeps the text you typed." />
         </group>
 
         <group id="catShapeSupportGroup" label="Shape support">

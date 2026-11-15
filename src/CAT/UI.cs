@@ -470,6 +470,7 @@ namespace Cat.UI
             { "catResize", () => new ResizeCommand() },
             { "catNoResize", () => new DoNotResizeCommand() },
             { "catReset", () => new ResetFixedElementsCommand() },
+            { "catAddFooterSource", () => new AddFooterSourceCommand() },
             { "catSplitJoin", () => new SplitJoinTextboxesCommand() },
             { "catWrap", () => new WordWrapCommand() },
             { "catNoWrap", () => new DoNotWordWrapCommand() },
@@ -479,6 +480,7 @@ namespace Cat.UI
             { "catReduceMargin", () => new ReduceTextMarginCommand() },
             { "catSelectSimilar", () => new SelectSimilarCommand(true, true, true) },
             { "catCopyExcel", () => new CopyForExcelCommand() },
+            { "catPasteExcel", () => new PasteForExcelCommand() },
             { "catSwapPosition", () => new SwapObjectPositionCommand() },
             { "catSameCornerRadius", () => new SameCornerRadiusCommand() },
             { "catMakeVertical", () => new MakeLineVerticalCommand() },
@@ -496,12 +498,12 @@ namespace Cat.UI
         {
             "catAutoFormat", "catTableCreator", "catTextBlock", "catIconLibrary",
             "catMakeVertical", "catMakeHorizontal",
-            "catSelectSimilar", "catSelectSimilarOptions", "catCopyExcel",
+            "catSelectSimilar", "catSelectSimilarOptions", "catCopyExcel", "catPasteExcel",
             "catAlignRows", "catAlignCols", "catDistH", "catDistV",
             "catCopySpacing", "catPasteSpacingV", "catPasteSpacingH",
             "catCopyPos", "catPastePos", "catSameH", "catSameW", "catSameSize",
             "catResize", "catNoResize", "catSplitJoin", "catWrap", "catNoWrap",
-            "catLineSpacing", "catFixTextBox", "catFontAlt", "catReduceMargin", "catReset",
+            "catLineSpacing", "catFixTextBox", "catFontAlt", "catReduceMargin", "catReset", "catAddFooterSource",
             "catSwapPosition", "catSameCornerRadius", "catHelp"
         };
 
@@ -565,6 +567,26 @@ namespace Cat.UI
                 try { _ribbon?.InvalidateControl("catAlignByFirst"); } catch { }
             }
             catch (Exception ex) { Notifier.Error($"Could not update Align by first: {ex.Message}"); }
+        }
+
+        /// <summary>
+        /// PowerPoint Paste (Ctrl+V and the Home Paste button).
+        /// A copied column, row, or table fills the selected boxes; every other paste stays PowerPoint's.
+        /// </summary>
+        public void OnPaste(Office.IRibbonControl control, ref bool cancelDefault)
+        {
+            cancelDefault = false;
+            try
+            {
+                var app = ThisAddIn.Instance?.App;
+                if (app == null) return;
+                var ctx = new CommandContext(app);
+                if (!PasteForExcelCommand.CanFill(ctx)) return;
+                try { app.StartNewUndoEntry(); } catch { }
+                PasteForExcelCommand.Fill(ctx);
+                cancelDefault = true;
+            }
+            catch { cancelDefault = false; }
         }
 
         public void OnAction(Office.IRibbonControl control)

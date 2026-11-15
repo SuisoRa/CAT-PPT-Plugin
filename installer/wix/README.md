@@ -13,7 +13,7 @@ PowerPoint registration: `HKCU\Software\Microsoft\Office\PowerPoint\Addins\CAT`
 
 1. Install **WiX Toolset v3.14** ([wixtoolset.org](https://wixtoolset.org/)).
 2. Download offline prerequisites into `installer/prereqs/` (see `prereqs/README.md`).
-3. Build **Release** in Visual Studio (manifest signing uses the cert thumbprint in `CAT.csproj`).
+3. Build **Release** in Visual Studio. Manifest signing uses the **Adithya Padmanabhan** certificate thumbprint in `CAT.csproj`. Run `installer\ensure-dev-certificate.ps1` if the build reports that the certificate is missing.
 4. From repo root:
 
    ```powershell
